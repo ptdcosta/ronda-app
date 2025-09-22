@@ -1,0 +1,108 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f4f7f9;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    min-height: 100vh;
+    margin: 0;
+}
+.container {
+    width: 100%;
+    max-width: 450px;
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+h1, h2, h3 { color: #2c3e50; }
+h1 { margin: 0; }
+a.db-button {
+    background-color: #007bff;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+}
+form, .new-rua-section, .totals-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 25px;
+    border-top: 1px solid #eee;
+    padding-top: 25px;
+}
+label { font-weight: 600; margin-bottom: 5px; }
+select, input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+.counter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+.counter-item { text-align: center; }
+.counter { display: flex; justify-content: center; align-items: center; }
+.counter input {
+    width: 50px;
+    text-align: center;
+    border: 1px solid #ccc;
+    margin: 0 5px;
+    font-size: 16px;
+    padding: 8px 0;
+    border-radius: 5px;
+}
+/* Hide number input arrows */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] { -moz-appearance: textfield; }
+
+button {
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-minus, .btn-plus {
+    width: 40px;
+    height: 40px;
+    background-color: #007bff;
+    color: white;
+}
+.btn-submit { background-color: #28a745; color: white; }
+.btn-add { background-color: #007bff; color: white; }
+.btn-clear { background-color: #dc3545; color: white; }
+button:hover { opacity: 0.9; }
+
+.totals-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+.total-box {
+    background-color: #007bff;
+    color: white;
+    padding: 12px;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: 500;
+}

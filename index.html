@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registo de Ronda</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Ronda</h1>
+            <a id="dbLink" href="#" target="_blank" class="db-button">Ir para BD</a>
+        </header>
+
+        <form id="entryForm">
+            <label for="ruaSelect">Rua:</label>
+            <select id="ruaSelect" required></select>
+
+            <div class="counter-grid">
+                <div class="counter-item">
+                    <label>Utentes</label>
+                    <div class="counter">
+                        <button type="button" class="btn-minus" data-field="utentes">-</button>
+                        <input type="number" id="utentes" value="0" min="0">
+                        <button type="button" class="btn-plus" data-field="utentes">+</button>
+                    </div>
+                </div>
+                <div class="counter-item">
+                    <label>Kit</label>
+                    <div class="counter">
+                        <button type="button" class="btn-minus" data-field="kit">-</button>
+                        <input type="number" id="kit" value="0" min="0">
+                        <button type="button" class="btn-plus" data-field="kit">+</button>
+                    </div>
+                </div>
+                <div class="counter-item">
+                    <label>Sopa</label>
+                    <div class="counter">
+                        <button type="button" class="btn-minus" data-field="sopa">-</button>
+                        <input type="number" id="sopa" value="0" min="0">
+                        <button type="button" class="btn-plus" data-field="sopa">+</button>
+                    </div>
+                </div>
+                <div class="counter-item">
+                    <label>Café</label>
+                    <div class="counter">
+                        <button type="button" class="btn-minus" data-field="cafe">-</button>
+                        <input type="number" id="cafe" value="0" min="0">
+                        <button type="button" class="btn-plus" data-field="cafe">+</button>
+                    </div>
+                </div>
+                <div class="counter-item">
+                    <label>Roupa</label>
+                    <div class="counter">
+                        <button type="button" class="btn-minus" data-field="roupa">-</button>
+                        <input type="number" id="roupa" value="0" min="0">
+                        <button type="button" class="btn-plus" data-field="roupa">+</button>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-submit">Submit</button>
+        </form>
+
+        <div class="new-rua-section">
+            <h3>Adicionar Nova Paragem:</h3>
+            <input type="text" id="newRuaInput" placeholder="Enter new Rua">
+            <button id="addRuaBtn" class="btn-add">Adicionar</button>
+        </div>
+
+        <div class="totals-section">
+            <h2>Totais do dia:</h2>
+            <div class="totals-grid">
+                <div class="total-box">Utentes: <span id="totalUtentes">0</span></div>
+                <div class="total-box">Kit: <span id="totalKit">0</span></div>
+                <div class="total-box">Sopa: <span id="totalSopa">0</span></div>
+                <div class="total-box">Café: <span id="totalCafe">0</span></div>
+                <div class="total-box">Roupa: <span id="totalRoupa">0</span></div>
+            </div>
+            <button id="clearDataBtn" class="btn-clear">Clear Data</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
