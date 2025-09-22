@@ -1,9 +1,9 @@
 // -------------------------------------------------------------------
 // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwdniM6hGivngDHdoJWcnJgFSuJB_rnx1i9GidtNgNBDRS-aKq344X0MHOI-eRhptS1/exec";
+const SCRIPT_URL = "YOUR_SCRIPT_URL_GOES_HERE";
 // -------------------------------------------------------------------
 // PASTE YOUR GOOGLE SHEET URL HERE (for the "Ir para BD" button)
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/1JFg7kvB1RqsjyoVlcocnRugjqkVWEcQctx3KSD8yfQs/edit?gid=0#gid=0";
+const SHEET_URL = "YOUR_GOOGLE_SHEET_URL_GOES_HERE";
 // -------------------------------------------------------------------
 
 
@@ -30,6 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
 form.addEventListener('submit', handleFormSubmit);
 addRuaBtn.addEventListener('click', addNewRua);
 clearDataBtn.addEventListener('click', clearDailyData);
+// **NEW**: Listen for changes on the dropdown to reset the form
+ruaSelect.addEventListener('change', resetFormFields);
+
+function resetFormFields() {
+    fields.forEach(field => document.getElementById(field).value = 0);
+}
 
 function setupCounters() {
     document.querySelectorAll('.btn-plus, .btn-minus').forEach(button => {
@@ -47,37 +53,26 @@ function setupCounters() {
     });
 }
 
-// REPLACE the old loadRuas function with this one
 function loadRuas() {
     ruaSelect.innerHTML = '<option>Loading streets...</option>';
-    
-    // Fetch the list of streets from our Google Sheet
-    fetch(SCRIPT_URL) // A GET request is the default
+    fetch(SCRIPT_URL)
         .then(res => res.json())
         .then(data => {
             if (data.ruas && data.ruas.length > 0) {
                 populateRuaDropdown(data.ruas);
-                // Save to local storage as a backup for offline use
                 localStorage.setItem('ruas', JSON.stringify(data.ruas));
             } else {
-                // If sheet is empty, load from backup or show message
                 const localRuas = JSON.parse(localStorage.getItem('ruas')) || [];
-                if (localRuas.length > 0) {
-                    populateRuaDropdown(localRuas);
-                } else {
-                    ruaSelect.innerHTML = '<option>No streets found. Add one below.</option>';
-                }
+                populateRuaDropdown(localRuas);
             }
         })
         .catch(error => {
             console.error("Error fetching streets, loading from backup:", error);
-            // If the network fails, load from the backup in local storage
             const localRuas = JSON.parse(localStorage.getItem('ruas')) || [];
             populateRuaDropdown(localRuas);
         });
 }
 
-// ADD this new helper function anywhere in your script.js
 function populateRuaDropdown(ruas) {
     if (ruas.length > 0) {
         ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
@@ -86,20 +81,54 @@ function populateRuaDropdown(ruas) {
     }
 }
 
-function addNewRua() {
+// **UPDATED**: This function now saves the new street to the Google Sheet
+async function addNewRua() {
     const newRua = newRuaInput.value.trim();
-    if (newRua) {
-        let ruas = JSON.parse(localStorage.getItem('ruas')) || [];
-        if (!ruas.includes(newRua)) {
-            ruas.push(newRua);
-            ruas.sort();
-            localStorage.setItem('ruas', JSON.stringify(ruas));
-            loadRuas();
-            ruaSelect.value = newRua;
+    if (!newRua) return;
+
+    addRuaBtn.disabled = true;
+    addRuaBtn.textContent = 'Adding...';
+
+    // Create a dummy record to send to the sheet
+    const formData = {
+        timestamp: new Date().toLocaleString("pt-PT"),
+        rua: newRua,
+        utentes: '', kit: '', sopa: '', cafe: '', roupa: ''
+    };
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        const result = await response.json();
+
+        if (result.result === 'success') {
+            // Add the new street to the dropdown locally for immediate use
+            const optionExists = Array.from(ruaSelect.options).some(opt => opt.value === newRua);
+            if (!optionExists) {
+                const newOption = document.createElement('option');
+                newOption.value = newRua;
+                newOption.textContent = newRua;
+                ruaSelect.appendChild(newOption);
+                ruaSelect.value = newRua; // Select the newly added street
+            }
+            alert('New street added successfully!');
+            newRuaInput.value = '';
+        } else {
+            throw new Error(result.message || 'Failed to add street.');
         }
-        newRuaInput.value = '';
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Could not add new street. Please try again.');
+    } finally {
+        addRuaBtn.disabled = false;
+        addRuaBtn.textContent = 'Adicionar';
     }
 }
+
 
 function loadTotals() {
     fields.forEach(field => {
@@ -110,9 +139,11 @@ function loadTotals() {
 
 function updateTotals(data) {
     fields.forEach(field => {
-        const currentTotal = parseInt(localStorage.getItem(`total_${field}`) || 0, 10);
-        const newTotal = currentTotal + parseInt(data[field], 10);
-        localStorage.setItem(`total_${field}`, newTotal);
+        if (data[field]) { // Only add to total if data exists
+            const currentTotal = parseInt(localStorage.getItem(`total_${field}`) || 0, 10);
+            const newTotal = currentTotal + parseInt(data[field], 10);
+            localStorage.setItem(`total_${field}`, newTotal);
+        }
     });
     loadTotals();
 }
@@ -148,8 +179,7 @@ function handleFormSubmit(e) {
     .then(data => {
         if(data.result === 'success') {
             updateTotals(formData);
-            // Reset form fields
-            fields.forEach(field => document.getElementById(field).value = 0);
+            resetFormFields(); // Reset form fields after successful submission
             alert('Data saved successfully!');
         } else {
             throw new Error(data.message || 'Unknown error');
@@ -167,4 +197,5 @@ function handleFormSubmit(e) {
 
 function capitalize(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
+}
 }
