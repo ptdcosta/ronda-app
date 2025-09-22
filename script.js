@@ -47,11 +47,42 @@ function setupCounters() {
     });
 }
 
+// REPLACE the old loadRuas function with this one
 function loadRuas() {
-    const ruas = JSON.parse(localStorage.getItem('ruas')) || ['Rua Teste 1', 'Rua Teste 2'];
-    ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
-    if (ruas.length === 0) {
-        ruaSelect.innerHTML = '<option>Adicione uma rua abaixo</option>';
+    ruaSelect.innerHTML = '<option>Loading streets...</option>';
+    
+    // Fetch the list of streets from our Google Sheet
+    fetch(SCRIPT_URL) // A GET request is the default
+        .then(res => res.json())
+        .then(data => {
+            if (data.ruas && data.ruas.length > 0) {
+                populateRuaDropdown(data.ruas);
+                // Save to local storage as a backup for offline use
+                localStorage.setItem('ruas', JSON.stringify(data.ruas));
+            } else {
+                // If sheet is empty, load from backup or show message
+                const localRuas = JSON.parse(localStorage.getItem('ruas')) || [];
+                if (localRuas.length > 0) {
+                    populateRuaDropdown(localRuas);
+                } else {
+                    ruaSelect.innerHTML = '<option>No streets found. Add one below.</option>';
+                }
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching streets, loading from backup:", error);
+            // If the network fails, load from the backup in local storage
+            const localRuas = JSON.parse(localStorage.getItem('ruas')) || [];
+            populateRuaDropdown(localRuas);
+        });
+}
+
+// ADD this new helper function anywhere in your script.js
+function populateRuaDropdown(ruas) {
+    if (ruas.length > 0) {
+        ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
+    } else {
+        ruaSelect.innerHTML = '<option>No streets found. Add one below.</option>';
     }
 }
 
