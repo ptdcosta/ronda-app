@@ -1,9 +1,9 @@
 // -------------------------------------------------------------------
 // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
-const SCRIPT_URL = "YOUR_SCRIPT_URL_GOES_HERE";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwdniM6hGivngDHdoJWcnJgFSuJB_rnx1i9GidtNgNBDRS-aKq344X0MHOI-eRhptS1/exec";
 // -------------------------------------------------------------------
 // PASTE YOUR GOOGLE SHEET URL HERE (for the "Ir para BD" button)
-const SHEET_URL = "YOUR_GOOGLE_SHEET_URL_GOES_HERE";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1JFg7kvB1RqsjyoVlcocnRugjqkVWEcQctx3KSD8yfQs/edit?gid=0#gid=0";
 // -------------------------------------------------------------------
 
 
