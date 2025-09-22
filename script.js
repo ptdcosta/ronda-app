@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 form.addEventListener('submit', handleFormSubmit);
 addRuaBtn.addEventListener('click', addNewRua);
 clearDataBtn.addEventListener('click', clearDailyData);
-// **NEW**: Listen for changes on the dropdown to reset the form
+// Listen for changes on the dropdown to reset the form
 ruaSelect.addEventListener('change', resetFormFields);
 
 function resetFormFields() {
@@ -53,25 +53,32 @@ function setupCounters() {
     });
 }
 
+// **UPDATED**: This function now loads the local list instantly, then fetches updates.
 function loadRuas() {
-    ruaSelect.innerHTML = '<option>Loading streets...</option>';
+    // 1. Load the locally saved list IMMEDIATELY for a fast startup.
+    const localRuas = JSON.parse(localStorage.getItem('ruas')) || [];
+    if (localRuas.length > 0) {
+        populateRuaDropdown(localRuas);
+    } else {
+        ruaSelect.innerHTML = '<option>Loading streets...</option>';
+    }
+
+    // 2. In the background, fetch the fresh list from the Google Sheet.
     fetch(SCRIPT_URL)
         .then(res => res.json())
         .then(data => {
             if (data.ruas && data.ruas.length > 0) {
+                // 3. Update the dropdown and save the fresh list for next time.
                 populateRuaDropdown(data.ruas);
                 localStorage.setItem('ruas', JSON.stringify(data.ruas));
-            } else {
-                const localRuas = JSON.parse(localStorage.getItem('ruas')) || [];
-                populateRuaDropdown(localRuas);
             }
         })
         .catch(error => {
-            console.error("Error fetching streets, loading from backup:", error);
-            const localRuas = JSON.parse(localStorage.getItem('ruas')) || [];
-            populateRuaDropdown(localRuas);
+            // If fetching fails, the user still has the local list, so it's okay.
+            console.error("Could not fetch fresh street list:", error);
         });
 }
+
 
 function populateRuaDropdown(ruas) {
     if (ruas.length > 0) {
@@ -81,7 +88,6 @@ function populateRuaDropdown(ruas) {
     }
 }
 
-// **UPDATED**: This function now saves the new street to the Google Sheet
 async function addNewRua() {
     const newRua = newRuaInput.value.trim();
     if (!newRua) return;
@@ -89,7 +95,6 @@ async function addNewRua() {
     addRuaBtn.disabled = true;
     addRuaBtn.textContent = 'Adding...';
 
-    // Create a dummy record to send to the sheet
     const formData = {
         timestamp: new Date().toLocaleString("pt-PT"),
         rua: newRua,
@@ -106,14 +111,13 @@ async function addNewRua() {
         const result = await response.json();
 
         if (result.result === 'success') {
-            // Add the new street to the dropdown locally for immediate use
             const optionExists = Array.from(ruaSelect.options).some(opt => opt.value === newRua);
             if (!optionExists) {
                 const newOption = document.createElement('option');
                 newOption.value = newRua;
                 newOption.textContent = newRua;
                 ruaSelect.appendChild(newOption);
-                ruaSelect.value = newRua; // Select the newly added street
+                ruaSelect.value = newRua;
             }
             alert('New street added successfully!');
             newRuaInput.value = '';
@@ -139,7 +143,7 @@ function loadTotals() {
 
 function updateTotals(data) {
     fields.forEach(field => {
-        if (data[field]) { // Only add to total if data exists
+        if (data[field]) {
             const currentTotal = parseInt(localStorage.getItem(`total_${field}`) || 0, 10);
             const newTotal = currentTotal + parseInt(data[field], 10);
             localStorage.setItem(`total_${field}`, newTotal);
@@ -179,7 +183,7 @@ function handleFormSubmit(e) {
     .then(data => {
         if(data.result === 'success') {
             updateTotals(formData);
-            resetFormFields(); // Reset form fields after successful submission
+            resetFormFields();
             alert('Data saved successfully!');
         } else {
             throw new Error(data.message || 'Unknown error');
@@ -197,5 +201,4 @@ function handleFormSubmit(e) {
 
 function capitalize(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
-}
 }
