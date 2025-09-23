@@ -1,6 +1,6 @@
 // -------------------------------------------------------------------
 // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
-const SCRIPT_URL = "YOUR_NEW_SCRIPT_URL_WILL_GO_HERE";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfzd9pU0yXdgHkZvGjBZC4qxD5r66Y-XMuYw-GYzbTW1uCod6jQ1fWA9X-neXf4EZTbg/exec";
 // -------------------------------------------------------------------
 // PASTE YOUR GOOGLE SHEET URL HERE (for the "Ir para BD" button)
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1JFg7kvB1RqsjyoVlcocnRugjqkVWEcQctx3KSD8yfQs/edit?gid=0#gid=0";
