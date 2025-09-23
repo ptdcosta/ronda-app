@@ -10,9 +10,10 @@ const form = document.getElementById('entryForm');
 const ruaSelect = document.getElementById('ruaSelect');
 const newRuaInput = document.getElementById('newRuaInput');
 const addRuaBtn = document.getElementById('addRuaBtn');
-const newRoundBtn = document.getElementById('newRoundBtn'); // New button
+const newRoundBtn = document.getElementById('newRoundBtn');
 const dbLink = document.getElementById('dbLink');
 const fields = ['utentes', 'kit', 'sopa', 'cafe', 'roupa'];
+let sessionEntries = {}; // **NEW**: Variable to hold current entries
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
@@ -25,23 +26,20 @@ document.addEventListener('DOMContentLoaded', () => {
 // Event Listeners
 form.addEventListener('submit', handleFormSubmit);
 addRuaBtn.addEventListener('click', addNewRua);
-newRoundBtn.addEventListener('click', startNewRound); // New listener
-
-// No longer need to listen for changes on ruaSelect to reset fields
+newRoundBtn.addEventListener('click', startNewRound);
+ruaSelect.addEventListener('change', displayDataForSelectedStreet); // **RE-ADDED**
 
 function handleFormSubmit(e) {
     const submitButton = e.target.querySelector('.btn-submit');
     submitButton.disabled = true;
     submitButton.textContent = 'Submitting...';
 
-    // After a short delay, reload the page to see updated totals
     setTimeout(() => {
         alert('Data saved successfully!');
-        location.reload(); // Reload the page
+        location.reload(); 
     }, 1500);
 }
 
-// **NEW**: Function to handle starting a new round
 function startNewRound() {
     if (!confirm('Tem a certeza que quer arquivar os dados e começar uma nova ronda?')) {
         return;
@@ -56,7 +54,7 @@ function startNewRound() {
     
     const hiddenInput = document.createElement('input');
     hiddenInput.type = 'hidden';
-    hiddenInput.name = 'action'; // Special field name
+    hiddenInput.name = 'action';
     hiddenInput.value = 'startNewRound';
     tempForm.appendChild(hiddenInput);
     
@@ -65,11 +63,11 @@ function startNewRound() {
     
     setTimeout(() => {
         alert('Nova ronda iniciada!');
-        location.reload(); // Reload the page
+        location.reload();
     }, 2000);
 }
 
-// **UPDATED**: This function now loads both streets and totals from the sheet
+// **UPDATED**: This function now loads streets, totals, AND entries
 function loadInitialData() {
     ruaSelect.innerHTML = '<option>A carregar...</option>';
     fetch(SCRIPT_URL)
@@ -81,21 +79,40 @@ function loadInitialData() {
             if (data.totals) {
                 displayTotals(data.totals);
             }
+            if (data.entries) {
+                sessionEntries = data.entries; // Save entries to memory
+                displayDataForSelectedStreet(); // Display data for the initially selected street
+            }
         })
         .catch(error => console.error("Error loading initial data:", error));
 }
 
-// **NEW**: This function displays the totals received from the sheet
+// **NEW**: Displays the data for the currently selected street
+function displayDataForSelectedStreet() {
+    const selectedRua = ruaSelect.value;
+    const entry = sessionEntries[selectedRua];
+
+    if (entry) {
+        // If data exists, populate the fields
+        document.getElementById('utentes').value = entry.utentes || 0;
+        document.getElementById('kit').value = entry.kit || 0;
+        document.getElementById('sopa').value = entry.sopa || 0;
+        document.getElementById('cafe').value = entry.café || 0; // Note the 'é'
+        document.getElementById('roupa').value = entry.roupa || 0;
+    } else {
+        // Otherwise, reset the fields to zero
+        fields.forEach(field => document.getElementById(field).value = 0);
+    }
+}
+
 function displayTotals(totals) {
     document.getElementById('totalUtentes').textContent = totals.utentes || 0;
     document.getElementById('totalKit').textContent = totals.kit || 0;
     document.getElementById('totalSopa').textContent = totals.sopa || 0;
-    // Note: The key in the totals object from the script is 'café'
-    document.getElementById('totalCafe').textContent = totals.café || 0; 
+    document.getElementById('totalCafe').textContent = totals.café || 0;
     document.getElementById('totalRoupa').textContent = totals.roupa || 0;
 }
 
-// The rest of the functions are simpler now
 function populateRuaDropdown(ruas) {
     if (ruas.length > 0) {
         ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
