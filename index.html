@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registo de Ronda</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -13,16 +13,16 @@
             <a id="dbLink" href="#" target="_blank" class="db-button">Ir para BD</a>
         </header>
 
-        <form id="entryForm">
+        <form id="entryForm" method="post" target="hidden_iframe">
             <label for="ruaSelect">Rua:</label>
-            <select id="ruaSelect" required></select>
+            <select id="ruaSelect" name="rua" required></select>
 
             <div class="counter-grid">
-                <div class="counter-item">
+                 <div class="counter-item">
                     <label>Utentes</label>
                     <div class="counter">
                         <button type="button" class="btn-minus" data-field="utentes">-</button>
-                        <input type="number" id="utentes" value="0" min="0">
+                        <input type="number" id="utentes" name="utentes" value="0" min="0">
                         <button type="button" class="btn-plus" data-field="utentes">+</button>
                     </div>
                 </div>
@@ -30,7 +30,7 @@
                     <label>Kit</label>
                     <div class="counter">
                         <button type="button" class="btn-minus" data-field="kit">-</button>
-                        <input type="number" id="kit" value="0" min="0">
+                        <input type="number" id="kit" name="kit" value="0" min="0">
                         <button type="button" class="btn-plus" data-field="kit">+</button>
                     </div>
                 </div>
@@ -38,7 +38,7 @@
                     <label>Sopa</label>
                     <div class="counter">
                         <button type="button" class="btn-minus" data-field="sopa">-</button>
-                        <input type="number" id="sopa" value="0" min="0">
+                        <input type="number" id="sopa" name="sopa" value="0" min="0">
                         <button type="button" class="btn-plus" data-field="sopa">+</button>
                     </div>
                 </div>
@@ -46,7 +46,7 @@
                     <label>Café</label>
                     <div class="counter">
                         <button type="button" class="btn-minus" data-field="cafe">-</button>
-                        <input type="number" id="cafe" value="0" min="0">
+                        <input type="number" id="cafe" name="cafe" value="0" min="0">
                         <button type="button" class="btn-plus" data-field="cafe">+</button>
                     </div>
                 </div>
@@ -54,7 +54,7 @@
                     <label>Roupa</label>
                     <div class="counter">
                         <button type="button" class="btn-minus" data-field="roupa">-</button>
-                        <input type="number" id="roupa" value="0" min="0">
+                        <input type="number" id="roupa" name="roupa" value="0" min="0">
                         <button type="button" class="btn-plus" data-field="roupa">+</button>
                     </div>
                 </div>
@@ -81,6 +81,8 @@
             <button id="clearDataBtn" class="btn-clear">Clear Data</button>
         </div>
     </div>
+
+    <iframe name="hidden_iframe" style="display:none;"></iframe>
     <script src="script.js"></script>
 </body>
 </html>
