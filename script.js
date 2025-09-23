@@ -1,6 +1,8 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzMzxicSiA6h6vO6N-2b58klstgzhUA8Ca0GmOya6fJE_HaAkLqZSqtHTuCTre_cgUXLw/exec";
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1yAm_nYTCJ9urDiPv4kp965jwaxV_TSZw1ZyTBkQXsVY/edit?gid=1545989912#gid=1545989912";
 
+
+// --- DOM Elements ---
 const form = document.getElementById('entryForm');
 const ruaSelect = document.getElementById('ruaSelect');
 const dbLink = document.getElementById('dbLink');
@@ -13,9 +15,11 @@ const addRuaModal = document.getElementById('addRuaModal');
 const newRuaInput = document.getElementById('newRuaInput');
 const modalAddBtn = document.getElementById('modalAddBtn');
 const modalCancelBtn = document.getElementById('modalCancelBtn');
+const hiddenIframe = document.getElementById('hidden_iframe'); // **NEW**
 const fields = ['utentes', 'kit', 'sopa', 'cafe', 'roupa'];
 let sessionEntries = {};
 
+// --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
     form.action = SCRIPT_URL;
     loadInitialData();
@@ -25,26 +29,36 @@ document.addEventListener('DOMContentLoaded', () => {
     dbLink.href = SHEET_URL;
 });
 
+// --- Event Listeners ---
 form.addEventListener('submit', handleFormSubmit);
 ruaSelect.addEventListener('change', displayDataForSelectedStreet);
 newRoundBtn.addEventListener('click', startNewRound);
 generateReportBtn.addEventListener('click', generateReport);
 
-// **UPDATED**: This function now saves the last selected street
+
+// **UPDATED**: This function is now faster and smarter
 function handleFormSubmit(e) {
+    e.preventDefault(); // Prevent the default form submission
+
     const submitButton = e.target.querySelector('.btn-submit');
     submitButton.disabled = true;
     submitButton.innerHTML = '<span class="material-symbols-outlined">sync</span> Submitting...';
     
-    // **NEW**: Save the current street to memory before reloading
+    // Save the current street to memory before submitting
     localStorage.setItem('lastSelectedRua', ruaSelect.value);
 
-    setTimeout(() => {
-        alert('Data saved successfully!');
-        location.reload(); 
-    }, 1500);
+    // Listen for the iframe to finish loading (meaning the submission is done)
+    hiddenIframe.onload = () => {
+        // Once done, reload the page. This is now much faster.
+        location.reload();
+    };
+
+    // Now, submit the form
+    form.submit();
 }
 
+
+// The rest of your script remains the same
 function loadInitialData() {
     ruaSelect.innerHTML = '<option>Loading...</option>';
     fetch(SCRIPT_URL)
@@ -80,7 +94,6 @@ function generateReport() {
 function setupFAB() {
     fabMain.addEventListener('click', () => { fabContainer.classList.toggle('active'); });
 }
-
 function setupModal() {
     addRuaBtn.addEventListener('click', () => { addRuaModal.style.display = 'flex'; });
     modalCancelBtn.addEventListener('click', () => { addRuaModal.style.display = 'none'; });
@@ -89,7 +102,6 @@ function setupModal() {
         addRuaModal.style.display = 'none';
     });
 }
-
 function displayDataForSelectedStreet() {
     const selectedRua = ruaSelect.value;
     const entry = sessionEntries[selectedRua];
@@ -106,13 +118,9 @@ function displayTotals(totals) {
     document.getElementById('totalCafe').textContent = totals.cafe || 0;
     document.getElementById('totalRoupa').textContent = totals.roupa || 0;
 }
-
-// **UPDATED**: This function now selects the last used street
 function populateRuaDropdown(ruas) {
     if (ruas.length > 0) {
         ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
-        
-        // **NEW**: Check memory for the last selected street and set it
         const lastSelectedRua = localStorage.getItem('lastSelectedRua');
         if (lastSelectedRua && ruas.includes(lastSelectedRua)) {
             ruaSelect.value = lastSelectedRua;
@@ -121,7 +129,6 @@ function populateRuaDropdown(ruas) {
         ruaSelect.innerHTML = '<option>Add a stop</option>';
     }
 }
-
 function setupCounters() {
     document.querySelectorAll('.btn-plus, .btn-minus').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -170,6 +177,10 @@ function startNewRound() {
     document.body.appendChild(tempForm);
     tempForm.submit();
     setTimeout(() => document.body.removeChild(tempForm), 500);
+    
+    // Clear the last selected street when starting a new round
+    localStorage.removeItem('lastSelectedRua');
+
     alert('New round starting... The page will now reload.');
     setTimeout(() => location.reload(), 1500);
 }
