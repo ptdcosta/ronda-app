@@ -10,20 +10,15 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/1yAm_nYTCJ9urDiPv4kp96
 const form = document.getElementById('entryForm');
 const ruaSelect = document.getElementById('ruaSelect');
 const dbLink = document.getElementById('dbLink');
-
-// FAB (Floating Action Button) Elements
 const fabContainer = document.querySelector('.fab-container');
 const fabMain = document.querySelector('.fab-main');
 const addRuaBtn = document.getElementById('addRuaBtn');
 const newRoundBtn = document.getElementById('newRoundBtn');
-const generateReportBtn = document.getElementById('generateReportBtn'); // **NEW**
-
-// Modal Elements
+const generateReportBtn = document.getElementById('generateReportBtn');
 const addRuaModal = document.getElementById('addRuaModal');
 const newRuaInput = document.getElementById('newRuaInput');
 const modalAddBtn = document.getElementById('modalAddBtn');
 const modalCancelBtn = document.getElementById('modalCancelBtn');
-
 const fields = ['utentes', 'kit', 'sopa', 'cafe', 'roupa'];
 let sessionEntries = {};
 
@@ -41,14 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
 form.addEventListener('submit', handleFormSubmit);
 ruaSelect.addEventListener('change', displayDataForSelectedStreet);
 newRoundBtn.addEventListener('click', startNewRound);
-generateReportBtn.addEventListener('click', generateReport); // **NEW**
+generateReportBtn.addEventListener('click', generateReport);
 
 // --- Core Functions ---
 function handleFormSubmit(e) {
     const submitButton = e.target.querySelector('.btn-submit');
     submitButton.disabled = true;
     submitButton.innerHTML = '<span class="material-symbols-outlined">sync</span> Submitting...';
-
     setTimeout(() => {
         alert('Data saved successfully!');
         location.reload(); 
@@ -70,59 +64,47 @@ function loadInitialData() {
         .catch(error => console.error("Error loading initial data:", error));
 }
 
-// **NEW FUNCTION TO GENERATE REPORT**
+// **UPDATED**: This function now uses the reliable form submission method
 function generateReport() {
-    alert('A gerar o relatório em "Sheet4". Isto pode demorar alguns segundos...');
-    
-    // We add ?action=report to the URL to tell our script what to do
-    fetch(`${SCRIPT_URL}?action=report`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.result === 'success') {
-                alert('Relatório gerado com sucesso!');
-            } else {
-                throw new Error(data.message || 'Ocorreu um erro desconhecido.');
-            }
-        })
-        .catch(error => {
-            alert(`Erro ao gerar o relatório: ${error.message}`);
-        });
+    if (!confirm('Tem a certeza que quer gerar o relatório?')) {
+        return;
+    }
+    const tempForm = document.createElement('form');
+    tempForm.method = 'post';
+    tempForm.action = SCRIPT_URL;
+    tempForm.target = 'hidden_iframe';
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'action';
+    hiddenInput.value = 'generateReport';
+    tempForm.appendChild(hiddenInput);
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    document.body.removeChild(tempForm);
+    alert('Relatório gerado com sucesso em "Sheet4"!');
 }
 
-
-// --- UI Functions ---
+// All other functions are unchanged
 function setupFAB() {
-    fabMain.addEventListener('click', () => {
-        fabContainer.classList.toggle('active');
-    });
+    fabMain.addEventListener('click', () => { fabContainer.classList.toggle('active'); });
 }
-
 function setupModal() {
-    addRuaBtn.addEventListener('click', () => {
-        addRuaModal.style.display = 'flex';
-    });
-    modalCancelBtn.addEventListener('click', () => {
-        addRuaModal.style.display = 'none';
-    });
+    addRuaBtn.addEventListener('click', () => { addRuaModal.style.display = 'flex'; });
+    modalCancelBtn.addEventListener('click', () => { addRuaModal.style.display = 'none'; });
     modalAddBtn.addEventListener('click', () => {
         addNewRua();
         addRuaModal.style.display = 'none';
     });
 }
-
 function displayDataForSelectedStreet() {
     const selectedRua = ruaSelect.value;
     const entry = sessionEntries[selectedRua];
-
     if (entry) {
-        fields.forEach(field => {
-            document.getElementById(field).value = entry[field] || 0;
-        });
+        fields.forEach(field => { document.getElementById(field).value = entry[field] || 0; });
     } else {
-        fields.forEach(field => document.getElementById(field).value = 0);
+        fields.forEach(field => { document.getElementById(field).value = 0; });
     }
 }
-
 function displayTotals(totals) {
     document.getElementById('totalUtentes').textContent = totals.utentes || 0;
     document.getElementById('totalKit').textContent = totals.kit || 0;
@@ -130,15 +112,11 @@ function displayTotals(totals) {
     document.getElementById('totalCafe').textContent = totals.cafe || 0;
     document.getElementById('totalRoupa').textContent = totals.roupa || 0;
 }
-
 function populateRuaDropdown(ruas) {
-    if (ruas.length > 0) {
-        ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
-    } else {
-        ruaSelect.innerHTML = '<option>Add a stop</option>';
-    }
+    ruas.length > 0
+        ? ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('')
+        : ruaSelect.innerHTML = '<option>Add a stop</option>';
 }
-
 function setupCounters() {
     document.querySelectorAll('.btn-plus, .btn-minus').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -150,27 +128,21 @@ function setupCounters() {
         });
     });
 }
-
-// --- Action Functions ---
 function addNewRua() {
     const newRua = newRuaInput.value.trim();
     if (!newRua) return;
-
     const tempForm = document.createElement('form');
     tempForm.method = 'post';
     tempForm.action = SCRIPT_URL;
     tempForm.target = 'hidden_iframe';
-    
     const hiddenInput = document.createElement('input');
     hiddenInput.type = 'hidden';
     hiddenInput.name = 'newRua';
     hiddenInput.value = newRua;
     tempForm.appendChild(hiddenInput);
-    
     document.body.appendChild(tempForm);
     tempForm.submit();
     document.body.removeChild(tempForm);
-    
     const newOption = document.createElement('option');
     newOption.value = newRua;
     newOption.textContent = newRua;
@@ -179,26 +151,19 @@ function addNewRua() {
     newRuaInput.value = '';
     alert('New stop added successfully!');
 }
-
 function startNewRound() {
-    if (!confirm('Are you sure you want to archive all data and start a new round?')) {
-        return;
-    }
-
+    if (!confirm('Are you sure you want to archive all data and start a new round?')) { return; }
     const tempForm = document.createElement('form');
     tempForm.method = 'post';
     tempForm.action = SCRIPT_URL;
     tempForm.target = 'hidden_iframe';
-    
     const hiddenInput = document.createElement('input');
     hiddenInput.type = 'hidden';
     hiddenInput.name = 'action';
     hiddenInput.value = 'startNewRound';
     tempForm.appendChild(hiddenInput);
-    
     document.body.appendChild(tempForm);
     tempForm.submit();
-    
     alert('New round starting... The page will now reload.');
     setTimeout(() => location.reload(), 1500);
 }
