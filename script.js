@@ -16,6 +16,7 @@ const fabContainer = document.querySelector('.fab-container');
 const fabMain = document.querySelector('.fab-main');
 const addRuaBtn = document.getElementById('addRuaBtn');
 const newRoundBtn = document.getElementById('newRoundBtn');
+const generateReportBtn = document.getElementById('generateReportBtn'); // **NEW**
 
 // Modal Elements
 const addRuaModal = document.getElementById('addRuaModal');
@@ -39,6 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- Event Listeners ---
 form.addEventListener('submit', handleFormSubmit);
 ruaSelect.addEventListener('change', displayDataForSelectedStreet);
+newRoundBtn.addEventListener('click', startNewRound);
+generateReportBtn.addEventListener('click', generateReport); // **NEW**
 
 // --- Core Functions ---
 function handleFormSubmit(e) {
@@ -66,6 +69,26 @@ function loadInitialData() {
         })
         .catch(error => console.error("Error loading initial data:", error));
 }
+
+// **NEW FUNCTION TO GENERATE REPORT**
+function generateReport() {
+    alert('A gerar o relatório em "Sheet4". Isto pode demorar alguns segundos...');
+    
+    // We add ?action=report to the URL to tell our script what to do
+    fetch(`${SCRIPT_URL}?action=report`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.result === 'success') {
+                alert('Relatório gerado com sucesso!');
+            } else {
+                throw new Error(data.message || 'Ocorreu um erro desconhecido.');
+            }
+        })
+        .catch(error => {
+            alert(`Erro ao gerar o relatório: ${error.message}`);
+        });
+}
+
 
 // --- UI Functions ---
 function setupFAB() {
@@ -179,6 +202,3 @@ function startNewRound() {
     alert('New round starting... The page will now reload.');
     setTimeout(() => location.reload(), 1500);
 }
-
-// Attach startNewRound to its button
-newRoundBtn.addEventListener('click', startNewRound);
