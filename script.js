@@ -6,33 +6,45 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzMzxicSiA6h6vO6N-2b
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1yAm_nYTCJ9urDiPv4kp965jwaxV_TSZw1ZyTBkQXsVY/edit?gid=1545989912#gid=1545989912";
 // -------------------------------------------------------------------
 
+// --- DOM Elements ---
 const form = document.getElementById('entryForm');
 const ruaSelect = document.getElementById('ruaSelect');
-const newRuaInput = document.getElementById('newRuaInput');
+const dbLink = document.getElementById('dbLink');
+
+// FAB (Floating Action Button) Elements
+const fabContainer = document.querySelector('.fab-container');
+const fabMain = document.querySelector('.fab-main');
 const addRuaBtn = document.getElementById('addRuaBtn');
 const newRoundBtn = document.getElementById('newRoundBtn');
-const dbLink = document.getElementById('dbLink');
-const fields = ['utentes', 'kit', 'sopa', 'cafe', 'roupa'];
-let sessionEntries = {}; // **NEW**: Variable to hold current entries
 
-// Initialize the application
+// Modal Elements
+const addRuaModal = document.getElementById('addRuaModal');
+const newRuaInput = document.getElementById('newRuaInput');
+const modalAddBtn = document.getElementById('modalAddBtn');
+const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+const fields = ['utentes', 'kit', 'sopa', 'cafe', 'roupa'];
+let sessionEntries = {};
+
+// --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
     form.action = SCRIPT_URL;
     loadInitialData();
     setupCounters();
+    setupFAB();
+    setupModal();
     dbLink.href = SHEET_URL;
 });
 
-// Event Listeners
+// --- Event Listeners ---
 form.addEventListener('submit', handleFormSubmit);
-addRuaBtn.addEventListener('click', addNewRua);
-newRoundBtn.addEventListener('click', startNewRound);
-ruaSelect.addEventListener('change', displayDataForSelectedStreet); // **RE-ADDED**
+ruaSelect.addEventListener('change', displayDataForSelectedStreet);
 
+// --- Core Functions ---
 function handleFormSubmit(e) {
     const submitButton = e.target.querySelector('.btn-submit');
     submitButton.disabled = true;
-    submitButton.textContent = 'Submitting...';
+    submitButton.innerHTML = '<span class="material-symbols-outlined">sync</span> Submitting...';
 
     setTimeout(() => {
         alert('Data saved successfully!');
@@ -40,67 +52,50 @@ function handleFormSubmit(e) {
     }, 1500);
 }
 
-function startNewRound() {
-    if (!confirm('Tem a certeza que quer arquivar os dados e começar uma nova ronda?')) {
-        return;
-    }
-    newRoundBtn.disabled = true;
-    newRoundBtn.textContent = 'A arquivar...';
-
-    const tempForm = document.createElement('form');
-    tempForm.method = 'post';
-    tempForm.action = SCRIPT_URL;
-    tempForm.target = 'hidden_iframe';
-    
-    const hiddenInput = document.createElement('input');
-    hiddenInput.type = 'hidden';
-    hiddenInput.name = 'action';
-    hiddenInput.value = 'startNewRound';
-    tempForm.appendChild(hiddenInput);
-    
-    document.body.appendChild(tempForm);
-    tempForm.submit();
-    
-    setTimeout(() => {
-        alert('Nova ronda iniciada!');
-        location.reload();
-    }, 2000);
-}
-
-// **UPDATED**: This function now loads streets, totals, AND entries
 function loadInitialData() {
-    ruaSelect.innerHTML = '<option>A carregar...</option>';
+    ruaSelect.innerHTML = '<option>Loading...</option>';
     fetch(SCRIPT_URL)
         .then(res => res.json())
         .then(data => {
-            if (data.ruas) {
-                populateRuaDropdown(data.ruas);
-            }
-            if (data.totals) {
-                displayTotals(data.totals);
-            }
+            if (data.ruas) { populateRuaDropdown(data.ruas); }
+            if (data.totals) { displayTotals(data.totals); }
             if (data.entries) {
-                sessionEntries = data.entries; // Save entries to memory
-                displayDataForSelectedStreet(); // Display data for the initially selected street
+                sessionEntries = data.entries;
+                displayDataForSelectedStreet();
             }
         })
         .catch(error => console.error("Error loading initial data:", error));
 }
 
-// **NEW**: Displays the data for the currently selected street
+// --- UI Functions ---
+function setupFAB() {
+    fabMain.addEventListener('click', () => {
+        fabContainer.classList.toggle('active');
+    });
+}
+
+function setupModal() {
+    addRuaBtn.addEventListener('click', () => {
+        addRuaModal.style.display = 'flex';
+    });
+    modalCancelBtn.addEventListener('click', () => {
+        addRuaModal.style.display = 'none';
+    });
+    modalAddBtn.addEventListener('click', () => {
+        addNewRua();
+        addRuaModal.style.display = 'none';
+    });
+}
+
 function displayDataForSelectedStreet() {
     const selectedRua = ruaSelect.value;
     const entry = sessionEntries[selectedRua];
 
     if (entry) {
-        // If data exists, populate the fields
-        document.getElementById('utentes').value = entry.utentes || 0;
-        document.getElementById('kit').value = entry.kit || 0;
-        document.getElementById('sopa').value = entry.sopa || 0;
-        document.getElementById('cafe').value = entry.café || 0; // Note the 'é'
-        document.getElementById('roupa').value = entry.roupa || 0;
+        fields.forEach(field => {
+            document.getElementById(field).value = entry[field] || 0;
+        });
     } else {
-        // Otherwise, reset the fields to zero
         fields.forEach(field => document.getElementById(field).value = 0);
     }
 }
@@ -109,7 +104,7 @@ function displayTotals(totals) {
     document.getElementById('totalUtentes').textContent = totals.utentes || 0;
     document.getElementById('totalKit').textContent = totals.kit || 0;
     document.getElementById('totalSopa').textContent = totals.sopa || 0;
-    document.getElementById('totalCafe').textContent = totals.café || 0;
+    document.getElementById('totalCafe').textContent = totals.cafe || 0;
     document.getElementById('totalRoupa').textContent = totals.roupa || 0;
 }
 
@@ -117,14 +112,27 @@ function populateRuaDropdown(ruas) {
     if (ruas.length > 0) {
         ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
     } else {
-        ruaSelect.innerHTML = '<option>Adicione uma rua</option>';
+        ruaSelect.innerHTML = '<option>Add a stop</option>';
     }
 }
 
+function setupCounters() {
+    document.querySelectorAll('.btn-plus, .btn-minus').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const field = e.target.dataset.field;
+            const input = document.getElementById(field);
+            let value = parseInt(input.value, 10);
+            value += e.target.classList.contains('btn-plus') ? 1 : -1;
+            input.value = Math.max(0, value);
+        });
+    });
+}
+
+// --- Action Functions ---
 function addNewRua() {
     const newRua = newRuaInput.value.trim();
     if (!newRua) return;
-    
+
     const tempForm = document.createElement('form');
     tempForm.method = 'post';
     tempForm.action = SCRIPT_URL;
@@ -146,17 +154,31 @@ function addNewRua() {
     ruaSelect.appendChild(newOption);
     ruaSelect.value = newRua;
     newRuaInput.value = '';
-    alert('Nova rua adicionada!');
+    alert('New stop added successfully!');
 }
 
-function setupCounters() {
-    document.querySelectorAll('.btn-plus, .btn-minus').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const field = e.target.dataset.field;
-            const input = document.getElementById(field);
-            let value = parseInt(input.value, 10);
-            value += e.target.classList.contains('btn-plus') ? 1 : -1;
-            input.value = Math.max(0, value);
-        });
-    });
+function startNewRound() {
+    if (!confirm('Are you sure you want to archive all data and start a new round?')) {
+        return;
+    }
+
+    const tempForm = document.createElement('form');
+    tempForm.method = 'post';
+    tempForm.action = SCRIPT_URL;
+    tempForm.target = 'hidden_iframe';
+    
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'action';
+    hiddenInput.value = 'startNewRound';
+    tempForm.appendChild(hiddenInput);
+    
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    
+    alert('New round starting... The page will now reload.');
+    setTimeout(() => location.reload(), 1500);
 }
+
+// Attach startNewRound to its button
+newRoundBtn.addEventListener('click', startNewRound);
