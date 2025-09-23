@@ -30,10 +30,15 @@ ruaSelect.addEventListener('change', displayDataForSelectedStreet);
 newRoundBtn.addEventListener('click', startNewRound);
 generateReportBtn.addEventListener('click', generateReport);
 
+// **UPDATED**: This function now saves the last selected street
 function handleFormSubmit(e) {
     const submitButton = e.target.querySelector('.btn-submit');
     submitButton.disabled = true;
     submitButton.innerHTML = '<span class="material-symbols-outlined">sync</span> Submitting...';
+    
+    // **NEW**: Save the current street to memory before reloading
+    localStorage.setItem('lastSelectedRua', ruaSelect.value);
+
     setTimeout(() => {
         alert('Data saved successfully!');
         location.reload(); 
@@ -68,13 +73,14 @@ function generateReport() {
     tempForm.appendChild(hiddenInput);
     document.body.appendChild(tempForm);
     tempForm.submit();
-    setTimeout(() => document.body.removeChild(tempForm), 500); // Delay removal
+    setTimeout(() => document.body.removeChild(tempForm), 500);
     alert('Report generated successfully in your Google Sheet!');
 }
 
 function setupFAB() {
     fabMain.addEventListener('click', () => { fabContainer.classList.toggle('active'); });
 }
+
 function setupModal() {
     addRuaBtn.addEventListener('click', () => { addRuaModal.style.display = 'flex'; });
     modalCancelBtn.addEventListener('click', () => { addRuaModal.style.display = 'none'; });
@@ -100,11 +106,22 @@ function displayTotals(totals) {
     document.getElementById('totalCafe').textContent = totals.cafe || 0;
     document.getElementById('totalRoupa').textContent = totals.roupa || 0;
 }
+
+// **UPDATED**: This function now selects the last used street
 function populateRuaDropdown(ruas) {
-    ruas.length > 0
-        ? ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('')
-        : ruaSelect.innerHTML = '<option>Add a stop</option>';
+    if (ruas.length > 0) {
+        ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
+        
+        // **NEW**: Check memory for the last selected street and set it
+        const lastSelectedRua = localStorage.getItem('lastSelectedRua');
+        if (lastSelectedRua && ruas.includes(lastSelectedRua)) {
+            ruaSelect.value = lastSelectedRua;
+        }
+    } else {
+        ruaSelect.innerHTML = '<option>Add a stop</option>';
+    }
 }
+
 function setupCounters() {
     document.querySelectorAll('.btn-plus, .btn-minus').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -130,7 +147,7 @@ function addNewRua() {
     tempForm.appendChild(hiddenInput);
     document.body.appendChild(tempForm);
     tempForm.submit();
-    setTimeout(() => document.body.removeChild(tempForm), 500); // Delay removal
+    setTimeout(() => document.body.removeChild(tempForm), 500);
     const newOption = document.createElement('option');
     newOption.value = newRua;
     newOption.textContent = newRua;
@@ -152,7 +169,7 @@ function startNewRound() {
     tempForm.appendChild(hiddenInput);
     document.body.appendChild(tempForm);
     tempForm.submit();
-    setTimeout(() => document.body.removeChild(tempForm), 500); // Delay removal
+    setTimeout(() => document.body.removeChild(tempForm), 500);
     alert('New round starting... The page will now reload.');
     setTimeout(() => location.reload(), 1500);
 }
