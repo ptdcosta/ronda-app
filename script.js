@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzMzxicSiA6h6vO6N-2b58klstgzhUA8Ca0GmOya6fJE_HaAkLqZSqtHTuCTre_cgUXLw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxectnCI4mYl_zlxBCrCD4cMf4NZTTpRTUEqY9lqihh4Y7y95ghrIjeOGLjrQ0mikU3LA/exec";
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1yAm_nYTCJ9urDiPv4kp965jwaxV_TSZw1ZyTBkQXsVY/edit?gid=1545989912#gid=1545989912";
 
 
@@ -11,11 +11,14 @@ const fabMain = document.querySelector('.fab-main');
 const addRuaBtn = document.getElementById('addRuaBtn');
 const newRoundBtn = document.getElementById('newRoundBtn');
 const generateReportBtn = document.getElementById('generateReportBtn');
+const emailReportBtn = document.getElementById('emailReportBtn');
 const addRuaModal = document.getElementById('addRuaModal');
 const newRuaInput = document.getElementById('newRuaInput');
 const modalAddBtn = document.getElementById('modalAddBtn');
 const modalCancelBtn = document.getElementById('modalCancelBtn');
-const hiddenIframe = document.getElementById('hidden_iframe'); // **NEW**
+const hiddenIframe = document.getElementById('hidden_iframe');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
 const fields = ['utentes', 'kit', 'sopa', 'cafe', 'roupa'];
 let sessionEntries = {};
 
@@ -34,48 +37,77 @@ form.addEventListener('submit', handleFormSubmit);
 ruaSelect.addEventListener('change', displayDataForSelectedStreet);
 newRoundBtn.addEventListener('click', startNewRound);
 generateReportBtn.addEventListener('click', generateReport);
+emailReportBtn.addEventListener('click', emailReport);
 
+/**
+ * This is the callback function that receives data from the Google Script.
+ * @param {object} data The data object returned from the script.
+ */
+function handleDataResponse(data) {
+    if (data.error) {
+        console.error("Error from Google Script:", data.error);
+        return;
+    }
+    if (data.ruas) { populateRuaDropdown(data.ruas); }
+    if (data.totals) { displayTotals(data.totals); }
+    if (data.entries) {
+        sessionEntries = data.entries;
+        displayDataForSelectedStreet();
+    }
+    if (data.totalStops !== undefined && data.completedStops !== undefined) {
+        updateProgressBar(data.completedStops, data.totalStops);
+    }
+}
 
-// **UPDATED**: This function is now faster and smarter
+/**
+ * Loads the initial data from the Google Script using the JSONP method.
+ */
+function loadInitialData() {
+    ruaSelect.innerHTML = '<option>A carregar...</option>';
+    const oldScript = document.getElementById('jsonp_script');
+    if (oldScript) {
+        oldScript.remove();
+    }
+    const script = document.createElement('script');
+    script.id = 'jsonp_script';
+    script.src = `${SCRIPT_URL}?callback=handleDataResponse`; 
+    document.head.appendChild(script);
+}
+
+/**
+ * Handles the main form submission.
+ */
 function handleFormSubmit(e) {
-    e.preventDefault(); // Prevent the default form submission
-
+    e.preventDefault();
     const submitButton = e.target.querySelector('.btn-submit');
     submitButton.disabled = true;
     submitButton.innerHTML = '<span class="material-symbols-outlined">sync</span> Submitting...';
-    
-    // Save the current street to memory before submitting
     localStorage.setItem('lastSelectedRua', ruaSelect.value);
-
-    // Listen for the iframe to finish loading (meaning the submission is done)
-    hiddenIframe.onload = () => {
-        // Once done, reload the page. This is now much faster.
-        location.reload();
-    };
-
-    // Now, submit the form
+    hiddenIframe.onload = () => { location.reload(); };
     form.submit();
 }
 
-
-// The rest of your script remains the same
-function loadInitialData() {
-    ruaSelect.innerHTML = '<option>Loading...</option>';
-    fetch(SCRIPT_URL)
-        .then(res => res.json())
-        .then(data => {
-            if (data.ruas) { populateRuaDropdown(data.ruas); }
-            if (data.totals) { displayTotals(data.totals); }
-            if (data.entries) {
-                sessionEntries = data.entries;
-                displayDataForSelectedStreet();
-            }
-        })
-        .catch(error => console.error("Error loading initial data:", error));
+/**
+ * Updates the progress bar UI.
+ * @param {number} completed The number of completed stops.
+ * @param {number} total The total number of stops.
+ */
+function updateProgressBar(completed, total) {
+    if (total === 0) {
+        progressText.textContent = "Adicione paragens em Sheet2";
+        progressBar.style.width = '0%';
+        return;
+    }
+    const percentage = Math.round((completed / total) * 100);
+    progressBar.style.width = `${percentage}%`;
+    progressText.textContent = `${completed} / ${total} Paragens Concluídas (${percentage}%)`;
 }
 
+/**
+ * Triggers the report generation in the backend.
+ */
 function generateReport() {
-    if (!confirm('Are you sure you want to generate the report?')) { return; }
+    if (!confirm('Tem a certeza que quer gerar o relatório visível?')) { return; }
     const tempForm = document.createElement('form');
     tempForm.method = 'post';
     tempForm.action = SCRIPT_URL;
@@ -88,12 +120,43 @@ function generateReport() {
     document.body.appendChild(tempForm);
     tempForm.submit();
     setTimeout(() => document.body.removeChild(tempForm), 500);
-    alert('Report generated successfully in your Google Sheet!');
+    alert('Relatório gerado com sucesso na sua Google Sheet!');
 }
 
+/**
+ * Triggers the email report generation in the backend.
+ */
+function emailReport() {
+    if (!confirm('Tem a certeza que quer enviar o relatório por email?')) { return; }
+    
+    const tempForm = document.createElement('form');
+    tempForm.method = 'post';
+    tempForm.action = SCRIPT_URL;
+    tempForm.target = 'hidden_iframe';
+    
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'action';
+    hiddenInput.value = 'emailReport';
+    tempForm.appendChild(hiddenInput);
+    
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    setTimeout(() => document.body.removeChild(tempForm), 500);
+    
+    alert('A enviar o email... Por favor aguarde.');
+}
+
+/**
+ * Sets up the Floating Action Button toggle.
+ */
 function setupFAB() {
     fabMain.addEventListener('click', () => { fabContainer.classList.toggle('active'); });
 }
+
+/**
+ * Sets up the "Add Stop" modal window.
+ */
 function setupModal() {
     addRuaBtn.addEventListener('click', () => { addRuaModal.style.display = 'flex'; });
     modalCancelBtn.addEventListener('click', () => { addRuaModal.style.display = 'none'; });
@@ -102,6 +165,10 @@ function setupModal() {
         addRuaModal.style.display = 'none';
     });
 }
+
+/**
+ * Displays the saved data for the currently selected street.
+ */
 function displayDataForSelectedStreet() {
     const selectedRua = ruaSelect.value;
     const entry = sessionEntries[selectedRua];
@@ -111,6 +178,11 @@ function displayDataForSelectedStreet() {
         fields.forEach(field => { document.getElementById(field).value = 0; });
     }
 }
+
+/**
+ * Displays the overall totals in the footer.
+ * @param {object} totals The totals object from the script.
+ */
 function displayTotals(totals) {
     document.getElementById('totalUtentes').textContent = totals.utentes || 0;
     document.getElementById('totalKit').textContent = totals.kit || 0;
@@ -118,6 +190,11 @@ function displayTotals(totals) {
     document.getElementById('totalCafe').textContent = totals.cafe || 0;
     document.getElementById('totalRoupa').textContent = totals.roupa || 0;
 }
+
+/**
+ * Populates the street selection dropdown.
+ * @param {string[]} ruas An array of street names.
+ */
 function populateRuaDropdown(ruas) {
     if (ruas.length > 0) {
         ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
@@ -129,6 +206,10 @@ function populateRuaDropdown(ruas) {
         ruaSelect.innerHTML = '<option>Add a stop</option>';
     }
 }
+
+/**
+ * Sets up the plus/minus counter buttons.
+ */
 function setupCounters() {
     document.querySelectorAll('.btn-plus, .btn-minus').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -140,6 +221,10 @@ function setupCounters() {
         });
     });
 }
+
+/**
+ * Adds a new street to the list in Sheet2.
+ */
 function addNewRua() {
     const newRua = newRuaInput.value.trim();
     if (!newRua) return;
@@ -163,6 +248,10 @@ function addNewRua() {
     newRuaInput.value = '';
     alert('New stop added successfully!');
 }
+
+/**
+ * Archives the current round and clears the data sheet.
+ */
 function startNewRound() {
     if (!confirm('Are you sure you want to archive all data and start a new round?')) { return; }
     const tempForm = document.createElement('form');
@@ -177,10 +266,7 @@ function startNewRound() {
     document.body.appendChild(tempForm);
     tempForm.submit();
     setTimeout(() => document.body.removeChild(tempForm), 500);
-    
-    // Clear the last selected street when starting a new round
     localStorage.removeItem('lastSelectedRua');
-
     alert('New round starting... The page will now reload.');
     setTimeout(() => location.reload(), 1500);
 }
