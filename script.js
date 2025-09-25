@@ -21,6 +21,7 @@ const progressText = document.getElementById('progressText');
 const fields = ['utentes', 'kit', 'sopa', 'cafe', 'roupa'];
 let sessionEntries = {};
 
+// --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
     form.action = SCRIPT_URL;
     loadInitialData();
@@ -30,30 +31,65 @@ document.addEventListener('DOMContentLoaded', () => {
     dbLink.href = SHEET_URL;
 });
 
+// --- Event Listeners ---
 form.addEventListener('submit', handleFormSubmit);
 ruaSelect.addEventListener('change', displayDataForSelectedStreet);
 newRoundBtn.addEventListener('click', startNewRound);
 generateReportBtn.addEventListener('click', generateReport);
 
-// **UPDATED**: Added redirect: "follow" to the fetch call
-function loadInitialData() {
-    ruaSelect.innerHTML = '<option>A carregar...</option>';
-    fetch(SCRIPT_URL, { redirect: "follow" }) // <-- FINAL FIX IS HERE
-        .then(res => res.json())
-        .then(data => {
-            if (data.ruas) { populateRuaDropdown(data.ruas); }
-            if (data.totals) { displayTotals(data.totals); }
-            if (data.entries) {
-                sessionEntries = data.entries;
-                displayDataForSelectedStreet();
-            }
-            if (data.totalStops !== undefined && data.completedStops !== undefined) {
-                updateProgressBar(data.completedStops, data.totalStops);
-            }
-        })
-        .catch(error => console.error("Error loading initial data:", error));
+/**
+ * This is the callback function that receives data from the Google Script.
+ * @param {object} data The data object returned from the script.
+ */
+function handleDataResponse(data) {
+    if (data.error) {
+        console.error("Error from Google Script:", data.error);
+        return;
+    }
+    if (data.ruas) { populateRuaDropdown(data.ruas); }
+    if (data.totals) { displayTotals(data.totals); }
+    if (data.entries) {
+        sessionEntries = data.entries;
+        displayDataForSelectedStreet();
+    }
+    if (data.totalStops !== undefined && data.completedStops !== undefined) {
+        updateProgressBar(data.completedStops, data.totalStops);
+    }
 }
 
+/**
+ * Loads the initial data from the Google Script using the JSONP method.
+ */
+function loadInitialData() {
+    ruaSelect.innerHTML = '<option>A carregar...</option>';
+    const oldScript = document.getElementById('jsonp_script');
+    if (oldScript) {
+        oldScript.remove();
+    }
+    const script = document.createElement('script');
+    script.id = 'jsonp_script';
+    script.src = `${SCRIPT_URL}?callback=handleDataResponse`; 
+    document.head.appendChild(script);
+}
+
+/**
+ * Handles the main form submission.
+ */
+function handleFormSubmit(e) {
+    e.preventDefault();
+    const submitButton = e.target.querySelector('.btn-submit');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="material-symbols-outlined">sync</span> Submitting...';
+    localStorage.setItem('lastSelectedRua', ruaSelect.value);
+    hiddenIframe.onload = () => { location.reload(); };
+    form.submit();
+}
+
+/**
+ * Updates the progress bar UI.
+ * @param {number} completed The number of completed stops.
+ * @param {number} total The total number of stops.
+ */
 function updateProgressBar(completed, total) {
     if (total === 0) {
         progressText.textContent = "Adicione paragens em Sheet2";
@@ -65,23 +101,146 @@ function updateProgressBar(completed, total) {
     progressText.textContent = `${completed} / ${total} Paragens Concluídas (${percentage}%)`;
 }
 
-function handleFormSubmit(e) {
-    e.preventDefault();
-    const submitButton = e.target.querySelector('.btn-submit');
-    submitButton.disabled = true;
-    submitButton.innerHTML = '<span class="material-symbols-outlined">sync</span> Submitting...';
-    localStorage.setItem('lastSelectedRua', ruaSelect.value);
-    hiddenIframe.onload = () => { location.reload(); };
-    form.submit();
+/**
+ * Triggers the report generation in the backend.
+ */
+function generateReport() {
+    if (!confirm('Are you sure you want to generate the report?')) { return; }
+    const tempForm = document.createElement('form');
+    tempForm.method = 'post';
+    tempForm.action = SCRIPT_URL;
+    tempForm.target = 'hidden_iframe';
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'action';
+    hiddenInput.value = 'generateReport';
+    tempForm.appendChild(hiddenInput);
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    setTimeout(() => document.body.removeChild(tempForm), 500);
+    alert('Report generated successfully in your Google Sheet!');
 }
 
-// ... (The rest of your functions are correct and do not need to be changed)
-function generateReport() { /* ... */ }
-function setupFAB() { /* ... */ }
-function setupModal() { /* ... */ }
-function displayDataForSelectedStreet() { /* ... */ }
-function displayTotals(totals) { /* ... */ }
-function populateRuaDropdown(ruas) { /* ... */ }
-function setupCounters() { /* ... */ }
-function addNewRua() { /* ... */ }
-function startNewRound() { /* ... */ }
+/**
+ * Sets up the Floating Action Button toggle.
+ */
+function setupFAB() {
+    fabMain.addEventListener('click', () => { fabContainer.classList.toggle('active'); });
+}
+
+/**
+ * Sets up the "Add Stop" modal window.
+ */
+function setupModal() {
+    addRuaBtn.addEventListener('click', () => { addRuaModal.style.display = 'flex'; });
+    modalCancelBtn.addEventListener('click', () => { addRuaModal.style.display = 'none'; });
+    modalAddBtn.addEventListener('click', () => {
+        addNewRua();
+        addRuaModal.style.display = 'none';
+    });
+}
+
+/**
+ * Displays the saved data for the currently selected street.
+ */
+function displayDataForSelectedStreet() {
+    const selectedRua = ruaSelect.value;
+    const entry = sessionEntries[selectedRua];
+    if (entry) {
+        fields.forEach(field => { document.getElementById(field).value = entry[field] || 0; });
+    } else {
+        fields.forEach(field => { document.getElementById(field).value = 0; });
+    }
+}
+
+/**
+ * Displays the overall totals in the footer.
+ * @param {object} totals The totals object from the script.
+ */
+function displayTotals(totals) {
+    document.getElementById('totalUtentes').textContent = totals.utentes || 0;
+    document.getElementById('totalKit').textContent = totals.kit || 0;
+    document.getElementById('totalSopa').textContent = totals.sopa || 0;
+    document.getElementById('totalCafe').textContent = totals.cafe || 0;
+    document.getElementById('totalRoupa').textContent = totals.roupa || 0;
+}
+
+/**
+ * Populates the street selection dropdown.
+ * @param {string[]} ruas An array of street names.
+ */
+function populateRuaDropdown(ruas) {
+    if (ruas.length > 0) {
+        ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
+        const lastSelectedRua = localStorage.getItem('lastSelectedRua');
+        if (lastSelectedRua && ruas.includes(lastSelectedRua)) {
+            ruaSelect.value = lastSelectedRua;
+        }
+    } else {
+        ruaSelect.innerHTML = '<option>Add a stop</option>';
+    }
+}
+
+/**
+ * Sets up the plus/minus counter buttons.
+ */
+function setupCounters() {
+    document.querySelectorAll('.btn-plus, .btn-minus').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const field = e.target.dataset.field;
+            const input = document.getElementById(field);
+            let value = parseInt(input.value, 10);
+            value += e.target.classList.contains('btn-plus') ? 1 : -1;
+            input.value = Math.max(0, value);
+        });
+    });
+}
+
+/**
+ * Adds a new street to the list in Sheet2.
+ */
+function addNewRua() {
+    const newRua = newRuaInput.value.trim();
+    if (!newRua) return;
+    const tempForm = document.createElement('form');
+    tempForm.method = 'post';
+    tempForm.action = SCRIPT_URL;
+    tempForm.target = 'hidden_iframe';
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'newRua';
+    hiddenInput.value = newRua;
+    tempForm.appendChild(hiddenInput);
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    setTimeout(() => document.body.removeChild(tempForm), 500);
+    const newOption = document.createElement('option');
+    newOption.value = newRua;
+    newOption.textContent = newRua;
+    ruaSelect.appendChild(newOption);
+    ruaSelect.value = newRua;
+    newRuaInput.value = '';
+    alert('New stop added successfully!');
+}
+
+/**
+ * Archives the current round and clears the data sheet.
+ */
+function startNewRound() {
+    if (!confirm('Are you sure you want to archive all data and start a new round?')) { return; }
+    const tempForm = document.createElement('form');
+    tempForm.method = 'post';
+    tempForm.action = SCRIPT_URL;
+    tempForm.target = 'hidden_iframe';
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'action';
+    hiddenInput.value = 'startNewRound';
+    tempForm.appendChild(hiddenInput);
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    setTimeout(() => document.body.removeChild(tempForm), 500);
+    localStorage.removeItem('lastSelectedRua');
+    alert('New round starting... The page will now reload.');
+    setTimeout(() => location.reload(), 1500);
+}
