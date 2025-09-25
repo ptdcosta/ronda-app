@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxectnCI4mYl_zlxBCrCD4cMf4NZTTpRTUEqY9lqihh4Y7y95ghrIjeOGLjrQ0mikU3LA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby5a0ku67nSVn96Ti317KgBhYegCvy0hjcU-t2HS7x03byMeOTIB0K9YqzwyDP_r--e5Q/exec";
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1yAm_nYTCJ9urDiPv4kp965jwaxV_TSZw1ZyTBkQXsVY/edit?gid=1545989912#gid=1545989912";
 
 

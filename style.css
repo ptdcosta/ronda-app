@@ -43,3 +43,31 @@ input[type=number] { -moz-appearance: textfield; }
 .btn-primary, .btn-secondary { color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; }
 .btn-primary { background-color: var(--primary-color); }
 .btn-secondary { background-color: var(--secondary-color); }
+/* --- Add these styles to the end of your style.css file --- */
+
+.progress-section {
+    margin-bottom: 1.5rem;
+}
+
+.progress-text {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.progress-container {
+    width: 100%;
+    background-color: var(--border-color);
+    border-radius: 20px;
+    height: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    width: 0%; /* Starts at 0% */
+    height: 100%;
+    background-color: var(--success-color);
+    border-radius: 20px;
+    transition: width 0.5s ease-in-out;
+}
