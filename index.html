@@ -9,13 +9,59 @@
 </head>
 <body>
     <div class="app-container">
-        <header class="app-header"><h1>Ronda</h1><a id="dbLink" href="#" target="_blank" class="db-button">Ver Base de Dados</a></header>
-        <main class="content"><div class="card"><form id="entryForm" method="post" target="hidden_iframe"><div class="form-group"><label for="ruaSelect">Paragem:</label><select id="ruaSelect" name="rua" required></select></div><div class="counters-grid"><div class="counter-item"><label for="utentes">Utentes</label><div class="counter"><button type="button" class="btn-minus" data-field="utentes">-</button><input type="number" id="utentes" name="utentes" value="0" min="0"><button type="button" class="btn-plus" data-field="utentes">+</button></div></div><div class="counter-item"><label for="kit">Kit</label><div class="counter"><button type="button" class="btn-minus" data-field="kit">-</button><input type="number" id="kit" name="kit" value="0" min="0"><button type="button" class="btn-plus" data-field="kit">+</button></div></div><div class="counter-item"><label for="sopa">Sopa</label><div class="counter"><button type="button" class="btn-minus" data-field="sopa">-</button><input type="number" id="sopa" name="sopa" value="0" min="0"><button type="button" class="btn-plus" data-field="sopa">+</button></div></div><div class="counter-item"><label for="cafe">Cafe</label><div class="counter"><button type="button" class="btn-minus" data-field="cafe">-</button><input type="number" id="cafe" name="cafe" value="0" min="0"><button type="button" class="btn-plus" data-field="cafe">+</button></div></div><div class="counter-item"><label for="roupa">Roupa</label><div class="counter"><button type="button" class="btn-minus" data-field="roupa">-</button><input type="number" id="roupa" name="roupa" value="0" min="0"><button type="button" class="btn-plus" data-field="roupa">+</button></div></div></div><button type="submit" class="btn-submit"><span class="material-symbols-outlined">send</span> Submeter Registo</button></form></div></main>
-        <div class="fab-container"><div class="fab-options"><button id="addRuaBtn" class="fab-option" title="Adicionar Paragem"><span class="material-symbols-outlined">add_road</span></button><button id="newRoundBtn" class="fab-option" title="Arquivar e Iniciar Nova Ronda"><span class="material-symbols-outlined">archive</span></button><button id="generateReportBtn" class="fab-option" title="Gerar Relatório de Impressão"><span class="material-symbols-outlined">summarize</span></button></div><button class="fab-main"><span class="material-symbols-outlined">add</span></button></div>
-        <footer class="app-footer"><h2>Totais da Ronda</h2><div class="totals-grid"><div class="total-box"><strong>Utentes:</strong> <span id="totalUtentes">0</span></div><div class="total-box"><strong>Kit:</strong> <span id="totalKit">0</span></div><div class="total-box"><strong>Sopa:</strong> <span id="totalSopa">0</span></div><div class="total-box"><strong>Cafe:</strong> <span id="totalCafe">0</span></div><div class="total-box"><strong>Roupa:</strong> <span id="totalRoupa">0</span></div></div></footer>
+        <header class="app-header">
+            <h1>Ronda</h1>
+            <a id="dbLink" href="#" target="_blank" class="db-button">Ver Base de Dados</a>
+        </header>
+
+        <main class="content">
+            <div class="card">
+                <form id="entryForm" method="post" target="hidden_iframe">
+                    <div class="form-group">
+                        <label for="ruaSelect">Paragem:</label>
+                        <select id="ruaSelect" name="rua" required></select>
+                    </div>
+
+                    <div class="progress-section">
+                        <div class="progress-text" id="progressText">0/0 Concluído (0%)</div>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="counters-grid">
+                        <div class="counter-item"><label for="utentes">Utentes</label><div class="counter"><button type="button" class="btn-minus" data-field="utentes">-</button><input type="number" id="utentes" name="utentes" value="0" min="0"><button type="button" class="btn-plus" data-field="utentes">+</button></div></div>
+                        <div class="counter-item"><label for="kit">Kit</label><div class="counter"><button type="button" class="btn-minus" data-field="kit">-</button><input type="number" id="kit" name="kit" value="0" min="0"><button type="button" class="btn-plus" data-field="kit">+</button></div></div>
+                        <div class="counter-item"><label for="sopa">Sopa</label><div class="counter"><button type="button" class="btn-minus" data-field="sopa">-</button><input type="number" id="sopa" name="sopa" value="0" min="0"><button type="button" class="btn-plus" data-field="sopa">+</button></div></div>
+                        <div class="counter-item"><label for="cafe">Cafe</label><div class="counter"><button type="button" class="btn-minus" data-field="cafe">-</button><input type="number" id="cafe" name="cafe" value="0" min="0"><button type="button" class="btn-plus" data-field="cafe">+</button></div></div>
+                        <div class="counter-item"><label for="roupa">Roupa</label><div class="counter"><button type="button" class="btn-minus" data-field="roupa">-</button><input type="number" id="roupa" name="roupa" value="0" min="0"><button type="button" class="btn-plus" data-field="roupa">+</button></div></div>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit"><span class="material-symbols-outlined">send</span> Submeter Registo</button>
+                </form>
+            </div>
+        </main>
+
+        <div class="fab-container">
+            <div class="fab-options">
+                <button id="addRuaBtn" class="fab-option" title="Adicionar Paragem"><span class="material-symbols-outlined">add_road</span></button>
+                <button id="newRoundBtn" class="fab-option" title="Arquivar e Iniciar Nova Ronda"><span class="material-symbols-outlined">archive</span></button>
+                <button id="generateReportBtn" class="fab-option" title="Gerar Relatório de Impressão"><span class="material-symbols-outlined">summarize</span></button>
+            </div>
+            <button class="fab-main"><span class="material-symbols-outlined">add</span></button>
+        </div>
+        <footer class="app-footer">
+            <h2>Totais da Ronda</h2>
+            <div class="totals-grid">
+                <div class="total-box"><strong>Utentes:</strong> <span id="totalUtentes">0</span></div>
+                <div class="total-box"><strong>Kit:</strong> <span id="totalKit">0</span></div>
+                <div class="total-box"><strong>Sopa:</strong> <span id="totalSopa">0</span></div>
+                <div class="total-box"><strong>Cafe:</strong> <span id="totalCafe">0</span></div>
+                <div class="total-box"><strong>Roupa:</strong> <span id="totalRoupa">0</span></div>
+            </div>
+        </footer>
     </div>
     <div id="addRuaModal" class="modal-overlay" style="display:none;"><div class="modal-content"><h3>Adicionar Nova Paragem</h3><input type="text" id="newRuaInput" placeholder="Nome da nova rua"><div class="modal-actions"><button id="modalCancelBtn" class="btn-secondary">Cancelar</button><button id="modalAddBtn" class="btn-primary">Adicionar</button></div></div></div>
-    
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
     <script src="script.js"></script>
 </body>
