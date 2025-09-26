@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwzPif3erLNXE9EqvqMrydNn7V3MvRxlS4xh5RupiJiSnql0d5nWtY2R9MEb0jlbebJdg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx2uxQLP6u-Z078F2aSIcW6qqBjJY--XD5Jx3_B6iVg-eV1ky6cCeArOAaKo4v1_DuhKw/exec";
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1yAm_nYTCJ9urDiPv4kp965jwaxV_TSZw1ZyTBkQXsVY/edit?gid=1545989912#gid=1545989912";
 
 
@@ -46,6 +46,7 @@ emailReportBtn.addEventListener('click', emailReport);
 function handleDataResponse(data) {
     if (data.error) {
         console.error("Error from Google Script:", data.error);
+        ruaSelect.innerHTML = '<option>Erro ao carregar</option>';
         return;
     }
     if (data.ruas) { populateRuaDropdown(data.ruas); }
@@ -75,23 +76,105 @@ function loadInitialData() {
 }
 
 /**
- * Handles the main form submission.
+ * Handles the main form submission using the reliable iframe method.
  */
 function handleFormSubmit(e) {
     e.preventDefault();
     const submitButton = e.target.querySelector('.btn-submit');
     submitButton.disabled = true;
-    submitButton.innerHTML = '<span class="material-symbols-outlined">sync</span> Submitting...';
+    submitButton.innerHTML = '<span class="material-symbols-outlined">sync</span> Guardando...';
+    
+    // Add the SubmissionID as a hidden input before submitting
+    const currentEntry = sessionEntries[ruaSelect.value] || {};
+    const submissionIdInput = document.createElement('input');
+    submissionIdInput.type = 'hidden';
+    submissionIdInput.name = 'SubmissionID';
+    submissionIdInput.value = currentEntry.submissionId || '';
+    form.appendChild(submissionIdInput);
+
     localStorage.setItem('lastSelectedRua', ruaSelect.value);
-    hiddenIframe.onload = () => { location.reload(); };
+    hiddenIframe.onload = () => {
+        alert('Registo guardado com sucesso!');
+        location.reload();
+    };
     form.submit();
+    form.removeChild(submissionIdInput); // Clean up
 }
 
 /**
- * Updates the progress bar UI.
- * @param {number} completed The number of completed stops.
- * @param {number} total The total number of stops.
+ * Helper function to send an action to the backend using the reliable form method.
+ * @param {string} actionName The name of the action.
+ * @param {object} payload An optional data payload.
+ * @param {string} confirmMsg The confirmation message.
+ * @param {string} successMsg The success message.
+ * @param {boolean} requiresReload Whether the page should reload after the action.
  */
+function sendActionViaForm(actionName, payload = {}, confirmMsg, successMsg, requiresReload = false) {
+    if (confirmMsg && !confirm(confirmMsg)) { return; }
+
+    const tempForm = document.createElement('form');
+    tempForm.method = 'post';
+    tempForm.action = SCRIPT_URL;
+    tempForm.target = 'hidden_iframe';
+    
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = actionName;
+    tempForm.appendChild(actionInput);
+
+    for (const key in payload) {
+        const payloadInput = document.createElement('input');
+        payloadInput.type = 'hidden';
+        payloadInput.name = key;
+        payloadInput.value = payload[key];
+        tempForm.appendChild(payloadInput);
+    }
+    
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    
+    setTimeout(() => {
+        document.body.removeChild(tempForm);
+        if (successMsg) { alert(successMsg); }
+        if (requiresReload) {
+            if (actionName === 'startNewRound') {
+                localStorage.removeItem('lastSelectedRua');
+            }
+            location.reload();
+        }
+    }, 1500);
+}
+
+function generateReport() {
+    sendActionViaForm('generateReport', {}, 'Tem a certeza que quer gerar o relatório visível?', 'Relatório gerado com sucesso!');
+}
+
+function emailReport() {
+    sendActionViaForm('emailReport', {}, 'Tem a certeza que quer enviar o relatório por email?', 'A enviar o email...');
+}
+
+function startNewRound() {
+    sendActionViaForm('startNewRound', {}, 'Tem a certeza que quer arquivar e começar uma nova ronda?', 'Nova ronda iniciada! A página vai recarregar.', true);
+}
+
+function addNewRua() {
+    const newRua = newRuaInput.value.trim();
+    if (!newRua) return;
+    
+    sendActionViaForm('addNewRua', { newRua: newRua }, null, 'Nova paragem adicionada com sucesso!');
+
+    const newOption = document.createElement('option');
+    newOption.value = newRua;
+    newOption.textContent = newRua;
+    ruaSelect.appendChild(newOption);
+    ruaSelect.value = newRua;
+    newRuaInput.value = '';
+    addRuaModal.style.display = 'none';
+}
+
+
+// --- UI & Helper Functions ---
 function updateProgressBar(completed, total) {
     if (total === 0) {
         progressText.textContent = "Adicione paragens em Sheet2";
@@ -103,72 +186,16 @@ function updateProgressBar(completed, total) {
     progressText.textContent = `${completed} / ${total} Paragens Concluídas (${percentage}%)`;
 }
 
-/**
- * Triggers the report generation in the backend.
- */
-function generateReport() {
-    if (!confirm('Tem a certeza que quer gerar o relatório visível?')) { return; }
-    const tempForm = document.createElement('form');
-    tempForm.method = 'post';
-    tempForm.action = SCRIPT_URL;
-    tempForm.target = 'hidden_iframe';
-    const hiddenInput = document.createElement('input');
-    hiddenInput.type = 'hidden';
-    hiddenInput.name = 'action';
-    hiddenInput.value = 'generateReport';
-    tempForm.appendChild(hiddenInput);
-    document.body.appendChild(tempForm);
-    tempForm.submit();
-    setTimeout(() => document.body.removeChild(tempForm), 500);
-    alert('Relatório gerado com sucesso na sua Google Sheet!');
-}
-
-/**
- * Triggers the email report generation in the backend.
- */
-function emailReport() {
-    if (!confirm('Tem a certeza que quer enviar o relatório por email?')) { return; }
-    
-    const tempForm = document.createElement('form');
-    tempForm.method = 'post';
-    tempForm.action = SCRIPT_URL;
-    tempForm.target = 'hidden_iframe';
-    
-    const hiddenInput = document.createElement('input');
-    hiddenInput.type = 'hidden';
-    hiddenInput.name = 'action';
-    hiddenInput.value = 'emailReport';
-    tempForm.appendChild(hiddenInput);
-    
-    document.body.appendChild(tempForm);
-    tempForm.submit();
-    setTimeout(() => document.body.removeChild(tempForm), 500);
-    
-    alert('A enviar o email... Por favor aguarde.');
-}
-
-/**
- * Sets up the Floating Action Button toggle.
- */
 function setupFAB() {
     fabMain.addEventListener('click', () => { fabContainer.classList.toggle('active'); });
 }
 
-/**
- * Sets up the "Add Stop" modal window.
- */
 function setupModal() {
     addRuaBtn.addEventListener('click', () => { addRuaModal.style.display = 'flex'; });
     modalCancelBtn.addEventListener('click', () => { addRuaModal.style.display = 'none'; });
-    modalAddBtn.addEventListener('click', () => {
-        addNewRua();
-        addRuaModal.style.display = 'none';
-    });
+    modalAddBtn.addEventListener('click', addNewRua);
 }
 
-/**
- * Displays the saved data for the currently selected street.
- */
 function displayDataForSelectedStreet() {
     const selectedRua = ruaSelect.value;
     const entry = sessionEntries[selectedRua];
@@ -179,10 +206,6 @@ function displayDataForSelectedStreet() {
     }
 }
 
-/**
- * Displays the overall totals in the footer.
- * @param {object} totals The totals object from the script.
- */
 function displayTotals(totals) {
     document.getElementById('totalUtentes').textContent = totals.utentes || 0;
     document.getElementById('totalKit').textContent = totals.kit || 0;
@@ -191,10 +214,6 @@ function displayTotals(totals) {
     document.getElementById('totalRoupa').textContent = totals.roupa || 0;
 }
 
-/**
- * Populates the street selection dropdown.
- * @param {string[]} ruas An array of street names.
- */
 function populateRuaDropdown(ruas) {
     if (ruas.length > 0) {
         ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
@@ -203,13 +222,10 @@ function populateRuaDropdown(ruas) {
             ruaSelect.value = lastSelectedRua;
         }
     } else {
-        ruaSelect.innerHTML = '<option>Add a stop</option>';
+        ruaSelect.innerHTML = '<option>Adicione uma paragem</option>';
     }
 }
 
-/**
- * Sets up the plus/minus counter buttons.
- */
 function setupCounters() {
     document.querySelectorAll('.btn-plus, .btn-minus').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -220,53 +236,4 @@ function setupCounters() {
             input.value = Math.max(0, value);
         });
     });
-}
-
-/**
- * Adds a new street to the list in Sheet2.
- */
-function addNewRua() {
-    const newRua = newRuaInput.value.trim();
-    if (!newRua) return;
-    const tempForm = document.createElement('form');
-    tempForm.method = 'post';
-    tempForm.action = SCRIPT_URL;
-    tempForm.target = 'hidden_iframe';
-    const hiddenInput = document.createElement('input');
-    hiddenInput.type = 'hidden';
-    hiddenInput.name = 'newRua';
-    hiddenInput.value = newRua;
-    tempForm.appendChild(hiddenInput);
-    document.body.appendChild(tempForm);
-    tempForm.submit();
-    setTimeout(() => document.body.removeChild(tempForm), 500);
-    const newOption = document.createElement('option');
-    newOption.value = newRua;
-    newOption.textContent = newRua;
-    ruaSelect.appendChild(newOption);
-    ruaSelect.value = newRua;
-    newRuaInput.value = '';
-    alert('New stop added successfully!');
-}
-
-/**
- * Archives the current round and clears the data sheet.
- */
-function startNewRound() {
-    if (!confirm('Are you sure you want to archive all data and start a new round?')) { return; }
-    const tempForm = document.createElement('form');
-    tempForm.method = 'post';
-    tempForm.action = SCRIPT_URL;
-    tempForm.target = 'hidden_iframe';
-    const hiddenInput = document.createElement('input');
-    hiddenInput.type = 'hidden';
-    hiddenInput.name = 'action';
-    hiddenInput.value = 'startNewRound';
-    tempForm.appendChild(hiddenInput);
-    document.body.appendChild(tempForm);
-    tempForm.submit();
-    setTimeout(() => document.body.removeChild(tempForm), 500);
-    localStorage.removeItem('lastSelectedRua');
-    alert('New round starting... The page will now reload.');
-    setTimeout(() => location.reload(), 1500);
 }
