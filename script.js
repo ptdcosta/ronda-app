@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwo9m9vJ5TOnDJdUMCn4KefqLuHSQ6XeTxoO7iuH2UIpIPQ0OPQtF80H_87qScFKMkDlQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwWpO4AcXUfKcUErDYduf3hXSjdem3_IFxA6BCHXC49_cXEZBHs8ekRhSXSANIyPmiqkA/exec";
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1yAm_nYTCJ9urDiPv4kp965jwaxV_TSZw1ZyTBkQXsVY/edit?gid=1545989912#gid=1545989912";
 
 
@@ -39,10 +39,12 @@ emailReportBtn.addEventListener('click', emailReport);
 
 /**
  * This is the callback function that receives data from the Google Script.
+ * @param {object} data The data object returned from the script.
  */
 function handleDataResponse(data) {
     if (data.error) {
         console.error("Error from Google Script:", data.error);
+        ruaSelect.innerHTML = '<option>Erro ao carregar</option>';
         return;
     }
     if (data.ruas) { populateRuaDropdown(data.ruas); }
@@ -79,19 +81,13 @@ function handleFormSubmit(e) {
     const submitButton = e.target.querySelector('.btn-submit');
     submitButton.disabled = true;
     submitButton.innerHTML = '<span class="material-symbols-outlined">sync</span> Guardando...';
+
+    const selectedRua = ruaSelect.value;
+    const currentEntry = sessionEntries[selectedRua] || {};
     
-    // Create a temporary form to submit the data.
-    const tempForm = document.createElement('form');
-    tempForm.method = 'post';
-    tempForm.action = SCRIPT_URL;
-    tempForm.target = 'hidden_iframe';
-    
-    // Add all the data fields to the form
-    const currentEntry = sessionEntries[ruaSelect.value] || {};
     const payload = {
-        SubmissionID: currentEntry.submissionId || '',
-        Timestamp: '', // This will be handled by the script
-        Rua: ruaSelect.value,
+        submissionId: currentEntry.submissionId || null,
+        Rua: selectedRua,
         Utentes: document.getElementById('utentes').value,
         Kit: document.getElementById('kit').value,
         Sopa: document.getElementById('sopa').value,
@@ -99,111 +95,149 @@ function handleFormSubmit(e) {
         Roupa: document.getElementById('roupa').value
     };
 
-    for (const key in payload) {
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = key;
-        hiddenInput.value = payload[key];
-        tempForm.appendChild(hiddenInput);
+    if (payload.submissionId) {
+        payload.SubmissionID = payload.submissionId;
     }
 
-    document.body.appendChild(tempForm);
-    tempForm.submit();
-    
-    setTimeout(() => {
-        document.body.removeChild(tempForm);
-        alert('Registo guardado com sucesso!');
-        localStorage.setItem('lastSelectedRua', ruaSelect.value);
-        location.reload();
-    }, 1500);
+    sendAction('saveEntry', payload, null, 'Registo guardado com sucesso!', true);
 }
 
 /**
- * Helper function to send an action to the backend using the reliable form method.
- * @param {string} actionName The name of the action.
- * @param {string} confirmMsg The confirmation message.
- * @param {string} successMsg The success message.
+ * Sends an action to the backend with a simple payload using fetch.
+ * @param {string} action The name of the action to perform.
+ * @param {object} payload An optional data payload.
+ * @param {string} confirmMsg A message to show in a confirmation dialog.
+ * @param {string} successMsg A message to show on success.
  * @param {boolean} requiresReload Whether the page should reload after the action.
  */
-function sendActionViaForm(actionName, confirmMsg, successMsg, requiresReload = false) {
-    if (confirmMsg && !confirm(confirmMsg)) { return; }
-
-    const tempForm = document.createElement('form');
-    tempForm.method = 'post';
-    tempForm.action = SCRIPT_URL;
-    tempForm.target = 'hidden_iframe';
-    
-    const hiddenInput = document.createElement('input');
-    hiddenInput.type = 'hidden';
-    hiddenInput.name = 'action';
-    hiddenInput.value = actionName;
-    tempForm.appendChild(hiddenInput);
-    
-    document.body.appendChild(tempForm);
-    tempForm.submit();
-    
-    setTimeout(() => {
-        document.body.removeChild(tempForm);
-        alert(successMsg);
-        if (requiresReload) {
-            if (actionName === 'startNewRound') {
-                localStorage.removeItem('lastSelectedRua');
-            }
-            location.reload();
+function sendAction(action, payload = {}, confirmMsg, successMsg, requiresReload = false) {
+    if (confirmMsg && !confirm(confirmMsg)) {
+        // Re-enable submit button if action is cancelled
+        if (action === 'saveEntry') {
+            const submitButton = document.querySelector('.btn-submit');
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<span class="material-symbols-outlined">send</span> Submeter Registo';
         }
-    }, 1500);
-}
+        return; 
+    }
 
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action, payload: payload })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status && (data.status.includes("success") || data.status.includes("created") || data.status.includes("updated"))) {
+            if (successMsg) { alert(successMsg); }
+            if (requiresReload) {
+                if (action === 'startNewRound') {
+                    localStorage.removeItem('lastSelectedRua');
+                } else if (action === 'saveEntry') {
+                    localStorage.setItem('lastSelectedRua', payload.Rua);
+                }
+                location.reload();
+            }
+        } else {
+            throw new Error(data.message || 'An unknown error occurred.');
+        }
+    })
+    .catch(error => {
+        alert(`Error: ${error.message}`);
+        // Re-enable submit button on failure
+        if (action === 'saveEntry') {
+            const submitButton = document.querySelector('.btn-submit');
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<span class="material-symbols-outlined">send</span> Submeter Registo';
+        }
+    });
+}
 
 function generateReport() {
-    sendActionViaForm('generateReport', 'Tem a certeza que quer gerar o relatório visível?', 'Relatório gerado com sucesso na sua Google Sheet!');
+    sendAction('generateReport', {}, 'Tem a certeza que quer gerar o relatório visível?', 'Relatório gerado com sucesso na sua Google Sheet!');
 }
-
 function emailReport() {
-    sendActionViaForm('emailReport', 'Tem a certeza que quer enviar o relatório por email?', 'A enviar o email... Por favor aguarde.');
+    sendAction('emailReport', {}, 'Tem a certeza que quer enviar o relatório por email?', 'A enviar o email... Por favor aguarde.');
 }
-
 function startNewRound() {
-    sendActionViaForm('startNewRound', 'Tem a certeza que quer arquivar os dados e começar uma nova ronda?', 'Nova ronda iniciada! A página vai recarregar.', true);
+    sendAction('startNewRound', {}, 'Tem a certeza que quer arquivar os dados e começar uma nova ronda?', 'Nova ronda iniciada! A página vai recarregar.', true);
 }
-
 function addNewRua() {
     const newRua = newRuaInput.value.trim();
     if (!newRua) return;
-
-    const tempForm = document.createElement('form');
-    tempForm.method = 'post';
-    tempForm.action = SCRIPT_URL;
-    tempForm.target = 'hidden_iframe';
     
-    const hiddenInput = document.createElement('input');
-    hiddenInput.type = 'hidden';
-    hiddenInput.name = 'newRua';
-    hiddenInput.value = newRua;
-    tempForm.appendChild(hiddenInput);
+    sendAction('addNewRua', { newRua: newRua }, null, null); // No alert, handled optimistically
     
-    document.body.appendChild(tempForm);
-    tempForm.submit();
-
-    setTimeout(() => {
-        document.body.removeChild(tempForm);
-        const newOption = document.createElement('option');
-        newOption.value = newRua;
-        newOption.textContent = newRua;
-        ruaSelect.appendChild(newOption);
-        ruaSelect.value = newRua;
-        newRuaInput.value = '';
-        alert('Nova paragem adicionada com sucesso!');
-    }, 1000);
-    
+    const newOption = document.createElement('option');
+    newOption.value = newRua;
+    newOption.textContent = newRua;
+    ruaSelect.appendChild(newOption);
+    ruaSelect.value = newRua;
+    newRuaInput.value = '';
     addRuaModal.style.display = 'none';
 }
 
 // --- UI & Helper Functions ---
-function updateProgressBar(completed, total) { /* ... */ }
-function setupFAB() { /* ... */ }
-function setupModal() { /* ... */ }
-function displayDataForSelectedStreet() { /* ... */ }
-function displayTotals(totals) { /* ... */ }
-function populateRuaDropdown(ruas) { /* ... */ }
-function setupCounters() { /* ... */ }
+function updateProgressBar(completed, total) {
+    if (total === 0) {
+        progressText.textContent = "Adicione paragens em Sheet2";
+        progressBar.style.width = '0%';
+        return;
+    }
+    const percentage = Math.round((completed / total) * 100);
+    progressBar.style.width = `${percentage}%`;
+    progressText.textContent = `${completed} / ${total} Paragens Concluídas (${percentage}%)`;
+}
+
+function setupFAB() {
+    fabMain.addEventListener('click', () => { fabContainer.classList.toggle('active'); });
+}
+
+function setupModal() {
+    addRuaBtn.addEventListener('click', () => { addRuaModal.style.display = 'flex'; });
+    modalCancelBtn.addEventListener('click', () => { addRuaModal.style.display = 'none'; });
+    modalAddBtn.addEventListener('click', addNewRua);
+}
+
+function displayDataForSelectedStreet() {
+    const selectedRua = ruaSelect.value;
+    const entry = sessionEntries[selectedRua];
+    if (entry) {
+        fields.forEach(field => { document.getElementById(field).value = entry[field] || 0; });
+    } else {
+        fields.forEach(field => { document.getElementById(field).value = 0; });
+    }
+}
+
+function displayTotals(totals) {
+    document.getElementById('totalUtentes').textContent = totals.utentes || 0;
+    document.getElementById('totalKit').textContent = totals.kit || 0;
+    document.getElementById('totalSopa').textContent = totals.sopa || 0;
+    document.getElementById('totalCafe').textContent = totals.cafe || 0;
+    document.getElementById('totalRoupa').textContent = totals.roupa || 0;
+}
+
+function populateRuaDropdown(ruas) {
+    if (ruas.length > 0) {
+        ruaSelect.innerHTML = ruas.map(rua => `<option value="${rua}">${rua}</option>`).join('');
+        const lastSelectedRua = localStorage.getItem('lastSelectedRua');
+        if (lastSelectedRua && ruas.includes(lastSelectedRua)) {
+            ruaSelect.value = lastSelectedRua;
+        }
+    } else {
+        ruaSelect.innerHTML = '<option>Adicione uma paragem</option>';
+    }
+}
+
+function setupCounters() {
+    document.querySelectorAll('.btn-plus, .btn-minus').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const field = e.target.dataset.field;
+            const input = document.getElementById(field);
+            let value = parseInt(input.value, 10);
+            value += e.target.classList.contains('btn-plus') ? 1 : -1;
+            input.value = Math.max(0, value);
+        });
+    });
+}
