@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwWpO4AcXUfKcUErDYduf3hXSjdem3_IFxA6BCHXC49_cXEZBHs8ekRhSXSANIyPmiqkA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx2uxQLP6u-Z078F2aSIcW6qqBjJY--XD5Jx3_B6iVg-eV1ky6cCeArOAaKo4v1_DuhKw/exec";
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1yAm_nYTCJ9urDiPv4kp965jwaxV_TSZw1ZyTBkQXsVY/edit?gid=1545989912#gid=1545989912";
 
 
@@ -38,39 +38,31 @@ generateReportBtn.addEventListener('click', generateReport);
 emailReportBtn.addEventListener('click', emailReport);
 
 /**
- * This is the callback function that receives data from the Google Script.
- * @param {object} data The data object returned from the script.
- */
-function handleDataResponse(data) {
-    if (data.error) {
-        console.error("Error from Google Script:", data.error);
-        ruaSelect.innerHTML = '<option>Erro ao carregar</option>';
-        return;
-    }
-    if (data.ruas) { populateRuaDropdown(data.ruas); }
-    if (data.totals) { displayTotals(data.totals); }
-    if (data.entries) {
-        sessionEntries = data.entries;
-        displayDataForSelectedStreet();
-    }
-    if (data.totalStops !== undefined && data.completedStops !== undefined) {
-        updateProgressBar(data.completedStops, data.totalStops);
-    }
-}
-
-/**
- * Loads the initial data from the Google Script using the JSONP method.
+ * Loads the initial data from the Google Script using fetch.
  */
 function loadInitialData() {
     ruaSelect.innerHTML = '<option>A carregar...</option>';
-    const oldScript = document.getElementById('jsonp_script');
-    if (oldScript) {
-        oldScript.remove();
-    }
-    const script = document.createElement('script');
-    script.id = 'jsonp_script';
-    script.src = `${SCRIPT_URL}?callback=handleDataResponse`; 
-    document.head.appendChild(script);
+    fetch(SCRIPT_URL, { redirect: "follow" })
+        .then(res => {
+            if (!res.ok) { throw new Error(`Network response was not ok: ${res.statusText}`); }
+            return res.json();
+        })
+        .then(data => {
+            if (data.error) { throw new Error(data.error); }
+            if (data.ruas) { populateRuaDropdown(data.ruas); }
+            if (data.totals) { displayTotals(data.totals); }
+            if (data.entries) {
+                sessionEntries = data.entries;
+                displayDataForSelectedStreet();
+            }
+            if (data.totalStops !== undefined && data.completedStops !== undefined) {
+                updateProgressBar(data.completedStops, data.totalStops);
+            }
+        })
+        .catch(error => {
+            console.error("Error loading initial data:", error);
+            ruaSelect.innerHTML = '<option>Erro ao carregar</option>';
+        });
 }
 
 /**
@@ -94,13 +86,11 @@ function handleFormSubmit(e) {
         Cafe: document.getElementById('cafe').value,
         Roupa: document.getElementById('roupa').value
     };
-
-    if (payload.submissionId) {
-        payload.SubmissionID = payload.submissionId;
-    }
+    if (payload.submissionId) { payload.SubmissionID = payload.submissionId; }
 
     sendAction('saveEntry', payload, null, 'Registo guardado com sucesso!', true);
 }
+
 
 /**
  * Sends an action to the backend with a simple payload using fetch.
@@ -112,7 +102,6 @@ function handleFormSubmit(e) {
  */
 function sendAction(action, payload = {}, confirmMsg, successMsg, requiresReload = false) {
     if (confirmMsg && !confirm(confirmMsg)) {
-        // Re-enable submit button if action is cancelled
         if (action === 'saveEntry') {
             const submitButton = document.querySelector('.btn-submit');
             submitButton.disabled = false;
@@ -132,11 +121,8 @@ function sendAction(action, payload = {}, confirmMsg, successMsg, requiresReload
         if (data.status && (data.status.includes("success") || data.status.includes("created") || data.status.includes("updated"))) {
             if (successMsg) { alert(successMsg); }
             if (requiresReload) {
-                if (action === 'startNewRound') {
-                    localStorage.removeItem('lastSelectedRua');
-                } else if (action === 'saveEntry') {
-                    localStorage.setItem('lastSelectedRua', payload.Rua);
-                }
+                if (action === 'startNewRound') { localStorage.removeItem('lastSelectedRua'); }
+                else if (action === 'saveEntry') { localStorage.setItem('lastSelectedRua', payload.Rua); }
                 location.reload();
             }
         } else {
@@ -145,7 +131,6 @@ function sendAction(action, payload = {}, confirmMsg, successMsg, requiresReload
     })
     .catch(error => {
         alert(`Error: ${error.message}`);
-        // Re-enable submit button on failure
         if (action === 'saveEntry') {
             const submitButton = document.querySelector('.btn-submit');
             submitButton.disabled = false;
@@ -167,7 +152,7 @@ function addNewRua() {
     const newRua = newRuaInput.value.trim();
     if (!newRua) return;
     
-    sendAction('addNewRua', { newRua: newRua }, null, null); // No alert, handled optimistically
+    sendAction('addNewRua', { newRua: newRua }, null, null);
     
     const newOption = document.createElement('option');
     newOption.value = newRua;
