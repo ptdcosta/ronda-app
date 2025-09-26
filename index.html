@@ -16,10 +16,10 @@
 
         <main class="content">
             <div class="card">
-                <form id="entryForm" method="post" target="hidden_iframe">
+                <form id="entryForm">
                     <div class="form-group">
                         <label for="ruaSelect">Paragem:</label>
-                        <select id="ruaSelect" name="rua" required></select>
+                        <select id="ruaSelect" name="Rua" required></select>
                     </div>
 
                     <div class="progress-section">
@@ -30,11 +30,11 @@
                     </div>
                     
                     <div class="counters-grid">
-                        <div class="counter-item"><label for="utentes">Utentes</label><div class="counter"><button type="button" class="btn-minus" data-field="utentes">-</button><input type="number" id="utentes" name="utentes" value="0" min="0"><button type="button" class="btn-plus" data-field="utentes">+</button></div></div>
-                        <div class="counter-item"><label for="kit">Kit</label><div class="counter"><button type="button" class="btn-minus" data-field="kit">-</button><input type="number" id="kit" name="kit" value="0" min="0"><button type="button" class="btn-plus" data-field="kit">+</button></div></div>
-                        <div class="counter-item"><label for="sopa">Sopa</label><div class="counter"><button type="button" class="btn-minus" data-field="sopa">-</button><input type="number" id="sopa" name="sopa" value="0" min="0"><button type="button" class="btn-plus" data-field="sopa">+</button></div></div>
-                        <div class="counter-item"><label for="cafe">Cafe</label><div class="counter"><button type="button" class="btn-minus" data-field="cafe">-</button><input type="number" id="cafe" name="cafe" value="0" min="0"><button type="button" class="btn-plus" data-field="cafe">+</button></div></div>
-                        <div class="counter-item"><label for="roupa">Roupa</label><div class="counter"><button type="button" class="btn-minus" data-field="roupa">-</button><input type="number" id="roupa" name="roupa" value="0" min="0"><button type="button" class="btn-plus" data-field="roupa">+</button></div></div>
+                        <div class="counter-item"><label for="utentes">Utentes</label><div class="counter"><button type="button" class="btn-minus" data-field="utentes">-</button><input type="number" id="utentes" value="0" min="0"><button type="button" class="btn-plus" data-field="utentes">+</button></div></div>
+                        <div class="counter-item"><label for="kit">Kit</label><div class="counter"><button type="button" class="btn-minus" data-field="kit">-</button><input type="number" id="kit" value="0" min="0"><button type="button" class="btn-plus" data-field="kit">+</button></div></div>
+                        <div class="counter-item"><label for="sopa">Sopa</label><div class="counter"><button type="button" class="btn-minus" data-field="sopa">-</button><input type="number" id="sopa" value="0" min="0"><button type="button" class="btn-plus" data-field="sopa">+</button></div></div>
+                        <div class="counter-item"><label for="cafe">Cafe</label><div class="counter"><button type="button" class="btn-minus" data-field="cafe">-</button><input type="number" id="cafe" value="0" min="0"><button type="button" class="btn-plus" data-field="cafe">+</button></div></div>
+                        <div class="counter-item"><label for="roupa">Roupa</label><div class="counter"><button type="button" class="btn-minus" data-field="roupa">-</button><input type="number" id="roupa" value="0" min="0"><button type="button" class="btn-plus" data-field="roupa">+</button></div></div>
                     </div>
                     
                     <button type="submit" class="btn-submit"><span class="material-symbols-outlined">send</span> Submeter Registo</button>
@@ -75,7 +75,6 @@
         </div>
     </div>
     
-    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
     <script src="script.js"></script>
 </body>
 </html>
